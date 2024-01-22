@@ -25,5 +25,9 @@ cargo add clap
 cargo add clap --features derive
 cargo add colored
 cargo add sysinfo
+cargo add libc
+
+cargo add psutil
+cargo remove psutil
 
 ```

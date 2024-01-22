@@ -50,3 +50,20 @@ const Z: f64 = 1024.0 * E; //1ZB(ZettaByte，十万亿亿字节，泽字节)=102
 const Y: f64 = 1024.0 * Z; //1YB(YottaByte，一亿亿亿字节，尧字节)=1024ZB
 
 const BB: f64 = 1024.0 * Y; //1BB(BrontoByte，千亿亿亿字节)=1024YB
+
+#[test]
+fn test() {
+    let block_size: u64 = 4096;
+    let free_blocks: u64 = 5429129;
+    let free = free_blocks * block_size;
+    println!("{}", free.pretty_size());
+}
+
+// Block size: 4096 bytes
+// Total blocks: 491968500
+// Free blocks: 5429129
+// Available blocks: 0
+// Inodes: 125026304
+// Free inodes: 125026192
+// Name max length: 255
+

@@ -1,5 +1,6 @@
 mod common;
 mod sys_info;
+mod disk;
 
 use std::fmt::Debug;
 use clap::{Parser, Subcommand, ArgAction};
