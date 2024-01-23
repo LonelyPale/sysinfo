@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/mount.h>
+//#include <sys/statfs.h> //linux才需要，macos不需要
 
 int main() {
     const char *path = "/";

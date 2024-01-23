@@ -19,6 +19,7 @@ int main(int argc, char *argv[]) {
     printf("Available blocks: %lu\n", fs.f_bavail);
     printf("Inodes: %lu\n", fs.f_files);
     printf("Free inodes: %lu\n", fs.f_ffree);
+    printf("Avail inodes: %lu\n", fs.f_favail);
     printf("Name max length: %lu\n", fs.f_namemax);
     return 0;
 }
