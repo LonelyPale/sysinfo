@@ -2,7 +2,7 @@ use std::mem;
 
 extern crate libc;
 
-use libc::{c_char, statvfs};
+use libc::statvfs;
 
 #[derive(Debug)]
 pub struct StatvfsResult {
@@ -20,11 +20,11 @@ pub struct StatvfsResult {
 }
 
 pub fn call_statvfs(path: String) -> Result<StatvfsResult, String> {
-    let path = path.as_ptr() as *const c_char;
+    let path = path.as_ptr() as *const _;
 
     unsafe {
         let mut buf: statvfs = mem::zeroed();
-        let result = statvfs(path, &mut buf as *mut statvfs); // 调用 statvfs 函数
+        let result = statvfs(path, &mut buf); // 调用 statvfs 函数
 
         if result == 0 {//调用成功
             let res = StatvfsResult {
