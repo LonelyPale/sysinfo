@@ -20,11 +20,11 @@ pub struct StatvfsResult {
 }
 
 pub fn call_statvfs(path: String) -> Result<StatvfsResult, String> {
-    let path = path.as_ptr() as *const _;
+    let path_ptr = path.as_ptr() as *const _;
 
     unsafe {
         let mut buf: statvfs = mem::zeroed();
-        let result = statvfs(path, &mut buf); // 调用 statvfs 函数
+        let result = statvfs(path_ptr, &mut buf); // 调用 statvfs 函数
 
         if result == 0 {//调用成功
             let res = StatvfsResult {
@@ -42,7 +42,7 @@ pub fn call_statvfs(path: String) -> Result<StatvfsResult, String> {
             };
             Ok(res)
         } else {//错误处理
-            Err(format!("Error calling statvfs: {}", result))
+            Err(format!("Error calling statvfs: code={} path={}", result, path))
         }
     }
 }
