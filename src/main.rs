@@ -3,6 +3,7 @@ mod sys_info;
 mod disk;
 
 use std::fmt::Debug;
+use std::mem;
 use clap::{Parser, Subcommand, ArgAction};
 
 use sys_info::{SysInfo};
@@ -82,36 +83,25 @@ extern crate libc;
 use libc::{statvfs, c_char};
 
 fn test() {
-    let mut buf = statvfs {
-        f_bsize: 0,
-        f_frsize: 0,
-        f_blocks: 0,
-        f_bfree: 0,
-        f_bavail: 0,
-        f_files: 0,
-        f_ffree: 0,
-        f_favail: 0,
-        f_fsid: 0,
-        f_flag: 0,
-        f_namemax: 0,
-    };
-    let res = unsafe {
-        libc::statvfs("/tmp4".as_ptr() as *const c_char, &mut buf)
+    let res__ = unsafe {
+        let mut buf: statvfs = mem::zeroed();
+        let res = libc::statvfs("/tmp4".as_ptr() as *const c_char, &mut buf);
+
+        if res == 0 {
+            println!("Filesystem information:");
+            println!("f_bsize: {}", buf.f_bsize);
+            println!("f_frsize: {}", buf.f_frsize);
+            println!("f_blocks: {}", buf.f_blocks);
+            println!("f_bfree: {}", buf.f_bfree);
+            println!("f_bavail: {}", buf.f_bavail);
+            println!("f_files: {}", buf.f_files);
+            println!("f_filefree: {}", buf.f_ffree);
+            println!("f_favail: {}", buf.f_favail);
+            println!("f_flag: {:#x}", buf.f_flag);
+            println!("f_namemax: {}", buf.f_namemax);
+        } else {
+            eprintln!("Failed to get filesystem information");
+        }
     };
 
-    if res == 0 {
-        println!("Filesystem information:");
-        println!("f_bsize: {}", buf.f_bsize);
-        println!("f_frsize: {}", buf.f_frsize);
-        println!("f_blocks: {}", buf.f_blocks);
-        println!("f_bfree: {}", buf.f_bfree);
-        println!("f_bavail: {}", buf.f_bavail);
-        println!("f_files: {}", buf.f_files);
-        println!("f_filefree: {}", buf.f_ffree);
-        println!("f_favail: {}", buf.f_favail);
-        println!("f_flag: {:#x}", buf.f_flag);
-        println!("f_namemax: {}", buf.f_namemax);
-    } else {
-        eprintln!("Failed to get filesystem information");
-    }
 }
