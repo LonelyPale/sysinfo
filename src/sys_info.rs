@@ -1,3 +1,4 @@
+use std::any::Any;
 use colored::Colorize;
 use sysinfo::{System, RefreshKind, CpuRefreshKind, MemoryRefreshKind, Components, Disks};
 use crate::common::PrettySize;
@@ -152,9 +153,13 @@ impl SysInfo {
     }
 
     pub fn print_disk(&self, no_color: bool) {
-        let disks = Disks::new_with_refreshed_list();
-        for disk in &disks {
+        let mut disks = Disks::new_with_refreshed_list();
+        // for disk in &disks {
+        for disk in disks.list_mut() {
             println!("{disk:?}");
+
+            let flag = &disk.refresh();
+            println!("flag: {flag}", );
 
             let kind = disk.kind();
             let name = disk.name();
