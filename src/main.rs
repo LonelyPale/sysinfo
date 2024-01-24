@@ -4,7 +4,7 @@ mod disk;
 
 use std::fmt::Debug;
 use clap::{Parser, Subcommand, ArgAction};
-use colored::Colorize;
+
 use sys_info::{SysInfo};
 
 #[derive(Debug, Parser)] // requires `derive` feature
@@ -67,21 +67,10 @@ fn main() {
             SysInfo::new().print_disk(args.no_color);
         }
         None => {
-            test();
             SysInfo::new_all().print_all(args.no_color);
         }
         // _ => {
         //     println!("{}", "testing...".yellow().bold());
         // }
     }
-}
-
-#[cfg(target_os = "macos")]
-fn test() {
-    println!("{}","macos!".red())
-}
-
-#[cfg(not(target_os = "macos"))]
-fn test() {
-    println!("{}","linux!".green())
 }

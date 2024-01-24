@@ -1,7 +1,7 @@
 use colored::Colorize;
 use sysinfo::{System, RefreshKind, CpuRefreshKind, MemoryRefreshKind, Components, Disks};
 use crate::common::PrettySize;
-use crate::disk::fill_statvfs;
+use crate::disk::disk_info;
 
 #[derive(Debug)]
 pub struct SysInfo {
@@ -165,7 +165,14 @@ impl SysInfo {
             let is_removable = disk.is_removable();
             println!("{} {} {} {} {} {} {}", kind, name.to_str().unwrap_or_default(), file_system.to_str().unwrap_or_default(), mount_point.to_str().unwrap_or_default(), total_space.pretty_size(), available_space.pretty_size(), is_removable);
 
-            fill_statvfs(String::from(mount_point.to_str().unwrap_or_default()));
+            let path = String::from(mount_point.to_str().unwrap_or_default());
+            let mut free_space = 0;
+            let disk_info_result = disk_info(path);
+            match disk_info_result {
+                Ok(res) => { free_space = res.f_bfree * res.f_bsize }
+                Err(err) => { eprintln!("{}", err.red()) }
+            }
+            println!("{}", free_space.pretty_size().blue());
             println!();
         }
 
