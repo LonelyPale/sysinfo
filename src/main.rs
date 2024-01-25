@@ -82,36 +82,42 @@ fn main() {
 #[cfg(all(unix, not(feature = "unknown-ci")))]
 macro_rules! retry_eintr {
     (set_to_0 => $($t:tt)+) => {{
-        println!("111");
+        println!("111-start");
         let errno = crate::unix::libc_errno();
         if !errno.is_null() {
+            println!("111-err");
             *errno = 0;
         }
         retry_eintr!($($t)+)
+        println!("111-end");
     }};
     ($errno_value:ident => $($t:tt)+) => {{
-        println!("222");
+        println!("222-start");
         loop {
             let ret = $($t)+;
             if ret < 0 {
                 let tmp = std::io::Error::last_os_error();
                 if tmp.kind() == std::io::ErrorKind::Interrupted {
+                    println!("222-err");
                     continue;
                 }
                 $errno_value = tmp.raw_os_error().unwrap_or(0);
             }
             break ret;
         }
+        println!("222-end");
     }};
     ($($t:tt)+) => {{
-        println!("333");
+        println!("333-start");
         loop {
             let ret = $($t)+;
             if ret < 0 && std::io::Error::last_os_error().kind() == std::io::ErrorKind::Interrupted {
+                println!("333-err");
                 continue;
             }
             break ret;
         }
+        println!("333-end");
     }};
 }
 
