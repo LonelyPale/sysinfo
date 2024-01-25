@@ -68,6 +68,9 @@ fn main() {
             SysInfo::new().print_disk(args.no_color);
         }
         None => {
+            test_temp();
+            println!();
+
             test();
             println!();
             // SysInfo::new_all().print_all(args.no_color);
@@ -129,11 +132,13 @@ use libc::{statvfs, c_char};
 
 fn test() {
     let path = std::path::Path::new("/tmp4");
-    let mount_point_cpath = to_cpath(path);
+    // let mount_point_cpath = to_cpath(path);
+    let mount_point_cpath = "/tmp4\0";
 
     unsafe {
         let mut stat: statvfs = mem::zeroed();
-        let res = retry_eintr!(statvfs(mount_point_cpath.as_ptr() as *const _, &mut stat));
+        // let res = retry_eintr!(statvfs(mount_point_cpath.as_ptr() as *const _, &mut stat));
+        let res = statvfs(mount_point_cpath.as_ptr() as *const _, &mut stat);
 
         if res == 0 {
             println!("Filesystem information:");
@@ -145,13 +150,12 @@ fn test() {
             println!("f_files: {}", stat.f_files);
             println!("f_filefree: {}", stat.f_ffree);
             println!("f_favail: {}", stat.f_favail);
-            // println!("f_flag: {:#x}", stat.f_flag);
-            // println!("f_namemax: {}", stat.f_namemax);
+            println!("f_flag: {:#x}", stat.f_flag);
+            println!("f_namemax: {}", stat.f_namemax);
         } else {
             eprintln!("Failed to get filesystem information");
         }
     };
-
 }
 
 pub(crate) fn to_cpath(path: &std::path::Path) -> Vec<u8> {
@@ -161,5 +165,20 @@ pub(crate) fn to_cpath(path: &std::path::Path) -> Vec<u8> {
     let mut cpath = path_os.as_bytes().to_vec();
     cpath.push(0);
     cpath
+}
+
+fn type_of<T>(_: T) -> &'static str {
+    std::any::type_name::<T>()
+}
+
+fn test_temp() {
+    let a = 42;
+    println!("a={:?} type={}", a, type_of(a));
+
+    let a = "abc";
+    println!("a={:?} type={}", a, type_of(a));
+
+    let a = String::from("测试字符串");
+    println!("a={:?} type={}", a, type_of(&a));
 }
 

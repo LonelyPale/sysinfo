@@ -1,4 +1,3 @@
-use std::any::Any;
 use colored::Colorize;
 use sysinfo::{System, RefreshKind, CpuRefreshKind, MemoryRefreshKind, Components, Disks};
 use crate::common::PrettySize;
@@ -159,7 +158,6 @@ impl SysInfo {
             println!("{disk:?}");
 
             let flag = &disk.refresh();
-            println!("flag: {flag}", );
 
             let kind = disk.kind();
             let name = disk.name();
@@ -169,6 +167,8 @@ impl SysInfo {
             let available_space = disk.available_space();
             let is_removable = disk.is_removable();
             println!("{} {} {} {} {} {} {}", kind, name.to_str().unwrap_or_default(), file_system.to_str().unwrap_or_default(), mount_point.to_str().unwrap_or_default(), total_space.pretty_size(), available_space.pretty_size(), is_removable);
+
+            println!("flag: {flag} {mount_point:?} {}", type_of(mount_point).blue());
 
             let path = String::from(mount_point.to_str().unwrap_or_default());
             let mut free_space = 0;
@@ -183,6 +183,10 @@ impl SysInfo {
 
         println!()
     }
+}
+
+fn type_of<T>(_: T) -> &'static str {
+    std::any::type_name::<T>()
 }
 
 #[test]
