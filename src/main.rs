@@ -88,8 +88,9 @@ macro_rules! retry_eintr {
             println!("111-err");
             *errno = 0;
         }
-        retry_eintr!($($t)+)
+        let a = retry_eintr!($($t)+);
         println!("111-end");
+        a
     }};
     ($errno_value:ident => $($t:tt)+) => {{
         println!("222-start");
@@ -103,9 +104,9 @@ macro_rules! retry_eintr {
                 }
                 $errno_value = tmp.raw_os_error().unwrap_or(0);
             }
+            println!("222-end");
             break ret;
         }
-        println!("222-end");
     }};
     ($($t:tt)+) => {{
         println!("333-start");
@@ -115,9 +116,9 @@ macro_rules! retry_eintr {
                 println!("333-err");
                 continue;
             }
+            println!("333-end");
             break ret;
         }
-        println!("333-end");
     }};
 }
 
