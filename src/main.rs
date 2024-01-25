@@ -70,7 +70,7 @@ fn main() {
         None => {
             test();
             println!();
-            SysInfo::new_all().print_all(args.no_color);
+            // SysInfo::new_all().print_all(args.no_color);
         }
         // _ => {
         //     println!("{}", "testing...".yellow().bold());
@@ -82,6 +82,7 @@ fn main() {
 #[cfg(all(unix, not(feature = "unknown-ci")))]
 macro_rules! retry_eintr {
     (set_to_0 => $($t:tt)+) => {{
+        println!("111");
         let errno = crate::unix::libc_errno();
         if !errno.is_null() {
             *errno = 0;
@@ -89,6 +90,7 @@ macro_rules! retry_eintr {
         retry_eintr!($($t)+)
     }};
     ($errno_value:ident => $($t:tt)+) => {{
+        println!("222");
         loop {
             let ret = $($t)+;
             if ret < 0 {
@@ -102,6 +104,7 @@ macro_rules! retry_eintr {
         }
     }};
     ($($t:tt)+) => {{
+        println!("333");
         loop {
             let ret = $($t)+;
             if ret < 0 && std::io::Error::last_os_error().kind() == std::io::ErrorKind::Interrupted {
@@ -118,25 +121,38 @@ extern crate libc;
 use libc::{statvfs, c_char};
 
 fn test() {
+    let path = std::path::Path::new("/tmp4");
+    let mount_point_cpath = to_cpath(path);
+
     unsafe {
-        let mut buf: statvfs = mem::zeroed();
-        let res = retry_eintr!(libc::statvfs("/tmp4".as_ptr() as *const c_char, &mut buf));
+        let mut stat: statvfs = mem::zeroed();
+        let res = retry_eintr!(statvfs(mount_point_cpath.as_ptr() as *const _, &mut stat));
 
         if res == 0 {
             println!("Filesystem information:");
-            println!("f_bsize: {}", buf.f_bsize);
-            println!("f_frsize: {}", buf.f_frsize);
-            println!("f_blocks: {}", buf.f_blocks);
-            println!("f_bfree: {}", buf.f_bfree);
-            println!("f_bavail: {}", buf.f_bavail);
-            println!("f_files: {}", buf.f_files);
-            println!("f_filefree: {}", buf.f_ffree);
-            println!("f_favail: {}", buf.f_favail);
-            println!("f_flag: {:#x}", buf.f_flag);
-            println!("f_namemax: {}", buf.f_namemax);
+            println!("f_bsize: {}", stat.f_bsize);
+            println!("f_frsize: {}", stat.f_frsize);
+            println!("f_blocks: {}", stat.f_blocks);
+            println!("f_bfree: {}", stat.f_bfree);
+            println!("f_bavail: {}", stat.f_bavail);
+            println!("f_files: {}", stat.f_files);
+            println!("f_filefree: {}", stat.f_ffree);
+            println!("f_favail: {}", stat.f_favail);
+            // println!("f_flag: {:#x}", stat.f_flag);
+            // println!("f_namemax: {}", stat.f_namemax);
         } else {
             eprintln!("Failed to get filesystem information");
         }
     };
 
 }
+
+pub(crate) fn to_cpath(path: &std::path::Path) -> Vec<u8> {
+    use std::{ffi::OsStr, os::unix::ffi::OsStrExt};
+
+    let path_os: &OsStr = path.as_ref();
+    let mut cpath = path_os.as_bytes().to_vec();
+    cpath.push(0);
+    cpath
+}
+
