@@ -78,14 +78,49 @@ fn main() {
     }
 }
 
+
+#[cfg(all(unix, not(feature = "unknown-ci")))]
+macro_rules! retry_eintr {
+    (set_to_0 => $($t:tt)+) => {{
+        let errno = crate::unix::libc_errno();
+        if !errno.is_null() {
+            *errno = 0;
+        }
+        retry_eintr!($($t)+)
+    }};
+    ($errno_value:ident => $($t:tt)+) => {{
+        loop {
+            let ret = $($t)+;
+            if ret < 0 {
+                let tmp = std::io::Error::last_os_error();
+                if tmp.kind() == std::io::ErrorKind::Interrupted {
+                    continue;
+                }
+                $errno_value = tmp.raw_os_error().unwrap_or(0);
+            }
+            break ret;
+        }
+    }};
+    ($($t:tt)+) => {{
+        loop {
+            let ret = $($t)+;
+            if ret < 0 && std::io::Error::last_os_error().kind() == std::io::ErrorKind::Interrupted {
+                continue;
+            }
+            break ret;
+        }
+    }};
+}
+
+
 extern crate libc;
 
 use libc::{statvfs, c_char};
 
 fn test() {
-    let res__ = unsafe {
+    unsafe {
         let mut buf: statvfs = mem::zeroed();
-        let res = libc::statvfs("/tmp4".as_ptr() as *const c_char, &mut buf);
+        let res = retry_eintr!(libc::statvfs("/tmp4".as_ptr() as *const c_char, &mut buf));
 
         if res == 0 {
             println!("Filesystem information:");
