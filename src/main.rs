@@ -72,7 +72,7 @@ fn main() {
             // println!();
             //
             // test();
-            // println!();
+            println!();
             SysInfo::new_all().print_all(args.no_color);
         }
         // _ => {
@@ -81,59 +81,16 @@ fn main() {
     }
 }
 
-
-#[cfg(all(unix, not(feature = "unknown-ci")))]
-macro_rules! retry_eintr {
-    (set_to_0 => $($t:tt)+) => {{
-        println!("111-start");
-        let errno = crate::unix::libc_errno();
-        if !errno.is_null() {
-            println!("111-err");
-            *errno = 0;
-        }
-        let a = retry_eintr!($($t)+);
-        println!("111-end");
-        a
-    }};
-    ($errno_value:ident => $($t:tt)+) => {{
-        println!("222-start");
-        loop {
-            let ret = $($t)+;
-            if ret < 0 {
-                let tmp = std::io::Error::last_os_error();
-                if tmp.kind() == std::io::ErrorKind::Interrupted {
-                    println!("222-err");
-                    continue;
-                }
-                $errno_value = tmp.raw_os_error().unwrap_or(0);
-            }
-            println!("222-end");
-            break ret;
-        }
-    }};
-    ($($t:tt)+) => {{
-        println!("333-start");
-        loop {
-            let ret = $($t)+;
-            if ret < 0 && std::io::Error::last_os_error().kind() == std::io::ErrorKind::Interrupted {
-                println!("333-err");
-                continue;
-            }
-            println!("333-end");
-            break ret;
-        }
-    }};
-}
-
-
 extern crate libc;
 
 use libc::{statvfs, c_char};
 
+#[test]
 fn test() {
-    let path = std::path::Path::new("/tmp4");
-    // let mount_point_cpath = to_cpath(path);
-    let mount_point_cpath = "/tmp4\0";
+    let s = "/Users/wyb".to_string();
+    let path = std::path::Path::new(&s);
+    let mount_point_cpath = to_cpath_111(path);
+    // let mount_point_cpath = "/Users/wyb\0";
 
     unsafe {
         let mut stat: statvfs = mem::zeroed();
@@ -158,7 +115,7 @@ fn test() {
     };
 }
 
-pub(crate) fn to_cpath(path: &std::path::Path) -> Vec<u8> {
+pub(crate) fn to_cpath_111(path: &std::path::Path) -> Vec<u8> {
     use std::{ffi::OsStr, os::unix::ffi::OsStrExt};
 
     let path_os: &OsStr = path.as_ref();
@@ -171,7 +128,8 @@ fn type_of<T>(_: T) -> &'static str {
     std::any::type_name::<T>()
 }
 
-fn test_temp() {
+#[test]
+fn test_type() {
     let a = 42;
     println!("a={:?} type={}", a, type_of(a));
 
