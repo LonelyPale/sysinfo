@@ -170,9 +170,10 @@ impl SysInfo {
 
             println!("flag: {flag} {mount_point:?} {}", type_of(mount_point).blue());
 
-            let path = String::from(mount_point.to_str().unwrap_or_default());
+
             let mut free_space = 0;
-            let disk_info_result = disk_info(path);
+            let path = mount_point.to_str().expect(&format!("{mount_point:?}"));
+            let disk_info_result = disk_info(&path.to_string());
             match disk_info_result {
                 Ok(res) => { free_space = res.f_bfree * res.f_bsize }
                 Err(err) => { eprintln!("{}", err.red()) }

@@ -68,12 +68,12 @@ fn main() {
             SysInfo::new().print_disk(args.no_color);
         }
         None => {
-            test_temp();
-            println!();
-
-            test();
-            println!();
-            // SysInfo::new_all().print_all(args.no_color);
+            // test_temp();
+            // println!();
+            //
+            // test();
+            // println!();
+            SysInfo::new_all().print_all(args.no_color);
         }
         // _ => {
         //     println!("{}", "testing...".yellow().bold());
@@ -181,4 +181,3 @@ fn test_temp() {
     let a = String::from("测试字符串");
     println!("a={:?} type={}", a, type_of(&a));
 }
-
