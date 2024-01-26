@@ -76,7 +76,7 @@ pub fn disk_info(path: &String) -> Result<StatvfsResult, String> {
 }
 
 #[cfg(not(target_os = "macos"))]
-pub fn disk_info(path: &Path) -> Result<StatvfsResult, String> {
+pub fn disk_info(path: &String) -> Result<StatvfsResult, String> {
     call_statvfs(path)
 }
 
