@@ -253,10 +253,10 @@ impl SysInfo {
         let free_space_width_max = disk_info_style.free_space_width_max;
         let available_space_width_max = disk_info_style.available_space_width_max;
         let is_removable_width_max = disk_info_style.is_removable_width_max;
-        println!("{:kind_width_max$} {:name_width_max$} {:file_system_width_max$} {:mount_point_width_max$} {:total_space_width_max$} {:free_space_width_max$} {:available_space_width_max$} {:is_removable_width_max$}",
+        println!("{:kind_width_max$} {:name_width_max$} {:file_system_width_max$} {:mount_point_width_max$} {:>total_space_width_max$} {:>free_space_width_max$} {:>available_space_width_max$} {:is_removable_width_max$}",
                  "kind", "name", "file_system", "mount_point", "total_space", "free_space", "available_space", "is_removable");
         for disk in disk_info_vec {
-            println!("{:kind_width_max$} {:name_width_max$} {:file_system_width_max$} {:mount_point_width_max$} {:total_space_width_max$} {:free_space_width_max$} {:available_space_width_max$} {:is_removable_width_max$}",
+            println!("{:kind_width_max$} {:name_width_max$} {:file_system_width_max$} {:mount_point_width_max$} {:>total_space_width_max$} {:>free_space_width_max$} {:>available_space_width_max$} {:is_removable_width_max$}",
                      disk.kind, disk.name, disk.file_system, disk.mount_point, disk.total_space, disk.free_space, disk.available_space, disk.is_removable);
         }
 
