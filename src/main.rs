@@ -3,7 +3,6 @@ mod sys_info;
 mod disk;
 
 use std::fmt::Debug;
-use std::mem;
 use clap::{Parser, Subcommand, ArgAction};
 
 use sys_info::{SysInfo};
@@ -68,74 +67,10 @@ fn main() {
             SysInfo::new().print_disk(args.no_color);
         }
         None => {
-            // test_temp();
-            // println!();
-            //
-            // test();
-            println!();
             SysInfo::new_all().print_all(args.no_color);
         }
         // _ => {
-        //     println!("{}", "testing...".yellow().bold());
+        //     println!("testing...");
         // }
     }
-}
-
-extern crate libc;
-
-use libc::{statvfs, c_char};
-
-#[test]
-fn test() {
-    let s = "/Users/wyb".to_string();
-    let path = std::path::Path::new(&s);
-    let mount_point_cpath = to_cpath_111(path);
-    // let mount_point_cpath = "/Users/wyb\0";
-
-    unsafe {
-        let mut stat: statvfs = mem::zeroed();
-        // let res = retry_eintr!(statvfs(mount_point_cpath.as_ptr() as *const _, &mut stat));
-        let res = statvfs(mount_point_cpath.as_ptr() as *const _, &mut stat);
-
-        if res == 0 {
-            println!("Filesystem information:");
-            println!("f_bsize: {}", stat.f_bsize);
-            println!("f_frsize: {}", stat.f_frsize);
-            println!("f_blocks: {}", stat.f_blocks);
-            println!("f_bfree: {}", stat.f_bfree);
-            println!("f_bavail: {}", stat.f_bavail);
-            println!("f_files: {}", stat.f_files);
-            println!("f_filefree: {}", stat.f_ffree);
-            println!("f_favail: {}", stat.f_favail);
-            println!("f_flag: {:#x}", stat.f_flag);
-            println!("f_namemax: {}", stat.f_namemax);
-        } else {
-            eprintln!("Failed to get filesystem information");
-        }
-    };
-}
-
-pub(crate) fn to_cpath_111(path: &std::path::Path) -> Vec<u8> {
-    use std::{ffi::OsStr, os::unix::ffi::OsStrExt};
-
-    let path_os: &OsStr = path.as_ref();
-    let mut cpath = path_os.as_bytes().to_vec();
-    cpath.push(0);
-    cpath
-}
-
-fn type_of<T>(_: T) -> &'static str {
-    std::any::type_name::<T>()
-}
-
-#[test]
-fn test_type() {
-    let a = 42;
-    println!("a={:?} type={}", a, type_of(a));
-
-    let a = "abc";
-    println!("a={:?} type={}", a, type_of(a));
-
-    let a = String::from("测试字符串");
-    println!("a={:?} type={}", a, type_of(&a));
 }

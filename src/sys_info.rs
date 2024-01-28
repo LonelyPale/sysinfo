@@ -191,6 +191,18 @@ fn type_of<T>(_: T) -> &'static str {
 }
 
 #[test]
+fn test_type() {
+    let a = 42;
+    println!("a={:?} type={}", a, type_of(a));
+
+    let a = "abc";
+    println!("a={:?} type={}", a, type_of(a));
+
+    let a = String::from("测试字符串");
+    println!("a={:?} type={}", a, type_of(&a));
+}
+
+#[test]
 fn test_print_all() {
     SysInfo::new_all().print_all(false);
 }
