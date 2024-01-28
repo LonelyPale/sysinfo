@@ -1,11 +1,36 @@
-use colored::Colorize;
 use sysinfo::{System, RefreshKind, CpuRefreshKind, MemoryRefreshKind, Components, Disks};
+use colored::Colorize;
+
 use crate::common::PrettySize;
 use crate::disk::disk_info;
 
 #[derive(Debug)]
 pub struct SysInfo {
     system: System,
+}
+
+#[derive(Debug)]
+pub struct DiskInfo {
+    pub kind: String,
+    pub name: String,
+    pub file_system: String,
+    pub mount_point: String,
+    pub total_space: String,
+    pub free_space: String,
+    pub available_space: String,
+    pub is_removable: String,
+}
+
+#[derive(Debug)]
+pub struct DiskInfoStyle {
+    pub kind_width_max: usize,
+    pub name_width_max: usize,
+    pub file_system_width_max: usize,
+    pub mount_point_width_max: usize,
+    pub total_space_width_max: usize,
+    pub free_space_width_max: usize,
+    pub available_space_width_max: usize,
+    pub is_removable_width_max: usize,
 }
 
 impl SysInfo {
@@ -152,34 +177,87 @@ impl SysInfo {
     }
 
     pub fn print_disk(&self, no_color: bool) {
-        let mut disks = Disks::new_with_refreshed_list();
-        // for disk in &disks {
-        for disk in disks.list_mut() {
-            println!("{disk:?}");
+        let mut disk_info_vec: Vec<DiskInfo> = Vec::new();
+        let mut disk_info_style: DiskInfoStyle = DiskInfoStyle {
+            kind_width_max: "kind".len(),
+            name_width_max: "name".len(),
+            file_system_width_max: "file_system".len(),
+            mount_point_width_max: "mount_point".len(),
+            total_space_width_max: "total_space".len(),
+            free_space_width_max: "free_space".len(),
+            available_space_width_max: "available_space".len(),
+            is_removable_width_max: "is_removable".len(),
+        };
 
-            let flag = &disk.refresh();
+        let disks = Disks::new_with_refreshed_list();
+        for disk in &disks {
+            let kind: String = disk.kind().to_string();
+            let name: String = disk.name().to_str().unwrap_or_default().to_string();
+            let file_system: String = disk.file_system().to_str().unwrap_or_default().to_string();
+            let mount_point: String = disk.mount_point().to_str().unwrap_or_default().to_string();
+            let total_space: String = disk.total_space().pretty_size();
+            let available_space: String = disk.available_space().pretty_size();
+            let is_removable: String = disk.is_removable().to_string();
 
-            let kind = disk.kind();
-            let name = disk.name();
-            let file_system = disk.file_system();
-            let mount_point = disk.mount_point();
-            let total_space = disk.total_space();
-            let available_space = disk.available_space();
-            let is_removable = disk.is_removable();
-            println!("{} {} {} {} {} {} {}", kind, name.to_str().unwrap_or_default(), file_system.to_str().unwrap_or_default(), mount_point.to_str().unwrap_or_default(), total_space.pretty_size(), available_space.pretty_size(), is_removable);
-
-            println!("flag: {flag} {mount_point:?} {}", type_of(mount_point).blue());
-
-
-            let mut free_space = 0;
-            let path = mount_point.to_str().expect(&format!("{mount_point:?}"));
-            let disk_info_result = disk_info(&path.to_string());
+            let mut free_size: u64 = 0;
+            let disk_info_result = disk_info(&mount_point);
             match disk_info_result {
-                Ok(res) => { free_space = res.f_bfree * res.f_bsize }
-                Err(err) => { eprintln!("{}", err.red()) }
+                Ok(res) => { free_size = res.f_bfree * res.f_bsize }
+                Err(err) => { eprintln!("print_disk disk_info error: {}", err.red()) }
             }
-            println!("{}", free_space.pretty_size().blue());
-            println!();
+            let free_space: String = free_size.pretty_size();
+
+            if kind.len() > disk_info_style.kind_width_max {
+                disk_info_style.kind_width_max = kind.len();
+            }
+            if name.len() > disk_info_style.name_width_max {
+                disk_info_style.name_width_max = name.len();
+            }
+            if file_system.len() > disk_info_style.file_system_width_max {
+                disk_info_style.file_system_width_max = file_system.len();
+            }
+            if mount_point.len() > disk_info_style.mount_point_width_max {
+                disk_info_style.mount_point_width_max = mount_point.len();
+            }
+            if total_space.len() > disk_info_style.total_space_width_max {
+                disk_info_style.total_space_width_max = total_space.len();
+            }
+            if free_space.len() > disk_info_style.free_space_width_max {
+                disk_info_style.free_space_width_max = free_space.len();
+            }
+            if available_space.len() > disk_info_style.available_space_width_max {
+                disk_info_style.available_space_width_max = available_space.len();
+            }
+            if is_removable.len() > disk_info_style.is_removable_width_max {
+                disk_info_style.is_removable_width_max = is_removable.len();
+            }
+
+            let disk_info = DiskInfo {
+                kind,
+                name,
+                file_system,
+                mount_point,
+                total_space,
+                free_space,
+                available_space,
+                is_removable,
+            };
+            disk_info_vec.push(disk_info);
+        }
+
+        let kind_width_max = disk_info_style.kind_width_max;
+        let name_width_max = disk_info_style.name_width_max;
+        let file_system_width_max = disk_info_style.file_system_width_max;
+        let mount_point_width_max = disk_info_style.mount_point_width_max;
+        let total_space_width_max = disk_info_style.total_space_width_max;
+        let free_space_width_max = disk_info_style.free_space_width_max;
+        let available_space_width_max = disk_info_style.available_space_width_max;
+        let is_removable_width_max = disk_info_style.is_removable_width_max;
+        println!("{:kind_width_max$} {:name_width_max$} {:file_system_width_max$} {:mount_point_width_max$} {:total_space_width_max$} {:free_space_width_max$} {:available_space_width_max$} {:is_removable_width_max$}",
+                 "kind", "name", "file_system", "mount_point", "total_space", "free_space", "available_space", "is_removable");
+        for disk in disk_info_vec {
+            println!("{:kind_width_max$} {:name_width_max$} {:file_system_width_max$} {:mount_point_width_max$} {:total_space_width_max$} {:free_space_width_max$} {:available_space_width_max$} {:is_removable_width_max$}",
+                     disk.kind, disk.name, disk.file_system, disk.mount_point, disk.total_space, disk.free_space, disk.available_space, disk.is_removable);
         }
 
         println!()
