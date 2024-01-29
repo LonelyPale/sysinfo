@@ -233,8 +233,9 @@ impl SysInfo {
             let used_size = disk.total_space() - free_size;
             let used = used_size.pretty_size();
 
-            let usage_rate_num = used_size  as f64 / disk.total_space() as f64 ;
-            let usage_rate = format!("{usage_rate_num:.2}%",);
+            let usage_rate_num = used_size as f64 / disk.total_space() as f64 * 100.;
+            let usage_rate = format!("{usage_rate_num:.2}%", );
+            // let usage_rate = format!("{usage_rate_num:.0}%", );
 
             if kind.len() > style.kind.width {
                 style.kind.width = kind.len();
