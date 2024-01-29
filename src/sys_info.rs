@@ -4,6 +4,17 @@ use colored::Colorize;
 use crate::common::PrettySize;
 use crate::disk::disk_info;
 
+const KIND: &str = "kind";
+const NAME: &str = "name";
+const FILE_SYSTEM: &str = "file_system";
+const MOUNT_POINT: &str = "mount_point";
+const TOTAL: &str = "total";
+const USED: &str = "used";
+const FREE: &str = "free";
+const AVAILABLE: &str = "available";
+const USAGE_RATE: &str = "usage_rate";
+const IS_REMOVABLE: &str = "is_removable";
+
 #[derive(Debug)]
 pub struct SysInfo {
     system: System,
@@ -15,22 +26,32 @@ pub struct DiskInfo {
     pub name: String,
     pub file_system: String,
     pub mount_point: String,
-    pub total_space: String,
-    pub free_space: String,
-    pub available_space: String,
+    pub total: String,
+    pub used: String,
+    pub free: String,
+    pub available: String,
+    pub usage_rate: String,
     pub is_removable: String,
 }
 
 #[derive(Debug)]
 pub struct DiskInfoStyle {
-    pub kind_width_max: usize,
-    pub name_width_max: usize,
-    pub file_system_width_max: usize,
-    pub mount_point_width_max: usize,
-    pub total_space_width_max: usize,
-    pub free_space_width_max: usize,
-    pub available_space_width_max: usize,
-    pub is_removable_width_max: usize,
+    pub kind: InfoStyle,
+    pub name: InfoStyle,
+    pub file_system: InfoStyle,
+    pub mount_point: InfoStyle,
+    pub total: InfoStyle,
+    pub used: InfoStyle,
+    pub free: InfoStyle,
+    pub available: InfoStyle,
+    pub usage_rate: InfoStyle,
+    pub is_removable: InfoStyle,
+}
+
+#[derive(Debug)]
+pub struct InfoStyle {
+    pub name: String,
+    pub width: usize,
 }
 
 impl SysInfo {
@@ -84,15 +105,15 @@ impl SysInfo {
         let host_name = System::host_name().unwrap_or_default();
 
         if no_color {
-            println!("{} name:           {}", "System", name);
+            println!("{} NAME:           {}", "System", NAME);
             println!("{} kernel version: {}", "System", kernel_version);
             println!("{} OS version:     {}", "System", os_version);
-            println!("{} host name:      {}", "System", host_name);
+            println!("{} host NAME:      {}", "System", host_name);
         } else {
-            println!("{} name:           {}", "System".red(), name.blue());
+            println!("{} NAME:           {}", "System".red(), NAME.blue());
             println!("{} kernel version: {}", "System".red(), kernel_version.cyan());
             println!("{} OS version:     {}", "System".red(), os_version.green());
-            println!("{} host name:      {}", "System".red(), host_name.purple());
+            println!("{} host NAME:      {}", "System".red(), host_name.purple());
         }
 
         println!()
@@ -136,7 +157,7 @@ impl SysInfo {
 
     /// 打印内存信息
     pub fn print_memory(&mut self, no_color: bool) {
-        // 通常，“free 空闲”内存是指未分配的内存，而“available 可用”内存是指可供（重新）使用的内存。
+        // 通常，“FREE 空闲”内存是指未分配的内存，而“AVAILABLE 可用”内存是指可供（重新）使用的内存。
         // ⚠️ Windows 和 FreeBSD 不报告“可用”内存，因此 free_memory 与 available_memory 的值相同。
 
         self.system.refresh_memory_specifics(MemoryRefreshKind::new().with_ram());
@@ -177,16 +198,18 @@ impl SysInfo {
     }
 
     pub fn print_disk(&self, no_color: bool) {
-        let mut disk_info_vec: Vec<DiskInfo> = Vec::new();
-        let mut disk_info_style: DiskInfoStyle = DiskInfoStyle {
-            kind_width_max: "kind".len(),
-            name_width_max: "name".len(),
-            file_system_width_max: "file_system".len(),
-            mount_point_width_max: "mount_point".len(),
-            total_space_width_max: "total_space".len(),
-            free_space_width_max: "free_space".len(),
-            available_space_width_max: "available_space".len(),
-            is_removable_width_max: "is_removable".len(),
+        let mut infos: Vec<DiskInfo> = Vec::new();
+        let mut style: DiskInfoStyle = DiskInfoStyle {
+            kind: InfoStyle { name: KIND.to_string(), width: KIND.len() },
+            name: InfoStyle { name: NAME.to_string(), width: NAME.len() },
+            file_system: InfoStyle { name: FILE_SYSTEM.to_string(), width: FILE_SYSTEM.len() },
+            mount_point: InfoStyle { name: MOUNT_POINT.to_string(), width: MOUNT_POINT.len() },
+            total: InfoStyle { name: TOTAL.to_string(), width: TOTAL.len() },
+            used: InfoStyle { name: USED.to_string(), width: USED.len() },
+            free: InfoStyle { name: FREE.to_string(), width: FREE.len() },
+            available: InfoStyle { name: AVAILABLE.to_string(), width: AVAILABLE.len() },
+            usage_rate: InfoStyle { name: USAGE_RATE.to_string(), width: USAGE_RATE.len() },
+            is_removable: InfoStyle { name: IS_REMOVABLE.to_string(), width: IS_REMOVABLE.len() },
         };
 
         let disks = Disks::new_with_refreshed_list();
@@ -195,8 +218,8 @@ impl SysInfo {
             let name: String = disk.name().to_str().unwrap_or_default().to_string();
             let file_system: String = disk.file_system().to_str().unwrap_or_default().to_string();
             let mount_point: String = disk.mount_point().to_str().unwrap_or_default().to_string();
-            let total_space: String = disk.total_space().pretty_size();
-            let available_space: String = disk.available_space().pretty_size();
+            let total: String = disk.total_space().pretty_size();
+            let available: String = disk.available_space().pretty_size();
             let is_removable: String = disk.is_removable().to_string();
 
             let mut free_size: u64 = 0;
@@ -205,31 +228,43 @@ impl SysInfo {
                 Ok(res) => { free_size = res.f_bfree * res.f_bsize }
                 Err(err) => { eprintln!("print_disk disk_info error: {}", err.red()) }
             }
-            let free_space: String = free_size.pretty_size();
+            let free: String = free_size.pretty_size();
 
-            if kind.len() > disk_info_style.kind_width_max {
-                disk_info_style.kind_width_max = kind.len();
+            let used_size = disk.total_space() - free_size;
+            let used = used_size.pretty_size();
+
+            let usage_rate_num = used_size  as f64 / disk.total_space() as f64 ;
+            let usage_rate = format!("{usage_rate_num:.2}%",);
+
+            if kind.len() > style.kind.width {
+                style.kind.width = kind.len();
             }
-            if name.len() > disk_info_style.name_width_max {
-                disk_info_style.name_width_max = name.len();
+            if name.len() > style.name.width {
+                style.name.width = name.len();
             }
-            if file_system.len() > disk_info_style.file_system_width_max {
-                disk_info_style.file_system_width_max = file_system.len();
+            if file_system.len() > style.file_system.width {
+                style.file_system.width = file_system.len();
             }
-            if mount_point.len() > disk_info_style.mount_point_width_max {
-                disk_info_style.mount_point_width_max = mount_point.len();
+            if mount_point.len() > style.mount_point.width {
+                style.mount_point.width = mount_point.len();
             }
-            if total_space.len() > disk_info_style.total_space_width_max {
-                disk_info_style.total_space_width_max = total_space.len();
+            if total.len() > style.total.width {
+                style.total.width = total.len();
             }
-            if free_space.len() > disk_info_style.free_space_width_max {
-                disk_info_style.free_space_width_max = free_space.len();
+            if used.len() > style.used.width {
+                style.used.width = used.len();
             }
-            if available_space.len() > disk_info_style.available_space_width_max {
-                disk_info_style.available_space_width_max = available_space.len();
+            if free.len() > style.free.width {
+                style.free.width = free.len();
             }
-            if is_removable.len() > disk_info_style.is_removable_width_max {
-                disk_info_style.is_removable_width_max = is_removable.len();
+            if available.len() > style.available.width {
+                style.available.width = available.len();
+            }
+            if usage_rate.len() > style.usage_rate.width {
+                style.usage_rate.width = usage_rate.len();
+            }
+            if is_removable.len() > style.is_removable.width {
+                style.is_removable.width = is_removable.len();
             }
 
             let disk_info = DiskInfo {
@@ -237,27 +272,31 @@ impl SysInfo {
                 name,
                 file_system,
                 mount_point,
-                total_space,
-                free_space,
-                available_space,
+                total,
+                used,
+                free,
+                available,
+                usage_rate,
                 is_removable,
             };
-            disk_info_vec.push(disk_info);
+            infos.push(disk_info);
         }
 
-        let kind_width_max = disk_info_style.kind_width_max;
-        let name_width_max = disk_info_style.name_width_max;
-        let file_system_width_max = disk_info_style.file_system_width_max;
-        let mount_point_width_max = disk_info_style.mount_point_width_max;
-        let total_space_width_max = disk_info_style.total_space_width_max;
-        let free_space_width_max = disk_info_style.free_space_width_max;
-        let available_space_width_max = disk_info_style.available_space_width_max;
-        let is_removable_width_max = disk_info_style.is_removable_width_max;
-        println!("{:kind_width_max$} {:name_width_max$} {:file_system_width_max$} {:mount_point_width_max$} {:>total_space_width_max$} {:>free_space_width_max$} {:>available_space_width_max$} {:is_removable_width_max$}",
-                 "kind", "name", "file_system", "mount_point", "total_space", "free_space", "available_space", "is_removable");
-        for disk in disk_info_vec {
-            println!("{:kind_width_max$} {:name_width_max$} {:file_system_width_max$} {:mount_point_width_max$} {:>total_space_width_max$} {:>free_space_width_max$} {:>available_space_width_max$} {:is_removable_width_max$}",
-                     disk.kind, disk.name, disk.file_system, disk.mount_point, disk.total_space, disk.free_space, disk.available_space, disk.is_removable);
+        let kind_width = style.kind.width;
+        let name_width = style.name.width;
+        let file_system_width = style.file_system.width;
+        let mount_point_width = style.mount_point.width;
+        let total_width = style.total.width;
+        let used_width = style.used.width;
+        let free_width = style.free.width;
+        let available_width = style.available.width;
+        let usage_rate = style.usage_rate.width;
+        let is_removable_width = style.is_removable.width;
+        println!("{:kind_width$} {:name_width$} {:file_system_width$} {:>total_width$} {:>used_width$} {:>free_width$} {:>available_width$} {:>usage_rate$} {:mount_point_width$} {:is_removable_width$}",
+                 KIND, NAME, FILE_SYSTEM, TOTAL, USED, FREE, AVAILABLE, USAGE_RATE, MOUNT_POINT, IS_REMOVABLE);
+        for info in infos {
+            println!("{:kind_width$} {:name_width$} {:file_system_width$} {:>total_width$} {:>used_width$} {:>free_width$} {:>available_width$} {:>usage_rate$} {:mount_point_width$} {:is_removable_width$}",
+                     info.kind, info.name, info.file_system, info.total, info.used, info.free, info.available, info.usage_rate, info.mount_point, info.is_removable);
         }
 
         println!()
