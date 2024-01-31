@@ -52,6 +52,7 @@ pub struct DiskInfoStyle {
 pub struct InfoStyle {
     pub name: String,
     pub width: usize,
+    // pub display: bool,
 }
 
 impl SysInfo {
