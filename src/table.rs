@@ -1,13 +1,13 @@
 use colored::{Color, Colorize};
 use std::collections::HashMap;
-use std::rc::Rc;
 use std::cell::RefCell;
+use std::rc::Rc;
 use std::fmt;
 
 pub struct Table {
     pub columns: Vec<Rc<RefCell<Column>>>,
     pub data: Vec<HashMap<String, String>>,
-    columns_cache: HashMap<String, Rc<RefCell<Column>>>,
+    columns_cache: RefCell<HashMap<String, Rc<RefCell<Column>>>>,
 
     // columns_cache: HashMap<String, &'a mut Column>,
     // 1. error: lifetime may not live long enough: self.columns_cache.insert(column.key.clone(), column); argument requires that `'1` must outlive `'a`
@@ -23,19 +23,21 @@ pub struct Table {
 }
 
 impl Table {
-    pub fn refresh(&mut self) {
-        for column in &mut self.columns {
+    pub fn refresh(&self) {
+        let mut columns_cache = self.columns_cache.borrow_mut();
+
+        for column in &self.columns {
             let mut col = column.borrow_mut();
             let len = col.title.len();
             if col.width < len {
                 col.width = len;
             }
-            self.columns_cache.insert(col.key.clone(), column.clone());
+            columns_cache.insert(col.key.clone(), column.clone());
         }
 
         for row in &self.data {
             for (key, value) in row {
-                if let Some(column) = self.columns_cache.get(key) {
+                if let Some(column) = columns_cache.get(key) {
                     let mut col = column.borrow_mut();
                     let len = value.len();
                     if col.width < len {
@@ -88,13 +90,14 @@ impl Default for Table {
         Self {
             columns: Vec::new(),
             data: Vec::new(),
-            columns_cache: HashMap::new(),
+            columns_cache: RefCell::new(HashMap::new()),
         }
     }
 }
 
 impl fmt::Display for Table {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.refresh();
         self.fmt_header(f)?;
         self.fmt_row(f)?;
         Ok(())
@@ -123,7 +126,7 @@ impl Column {
                 None => value.normal(),
             };
 
-            //处理对齐方式
+            //处理对齐
             let width = self.width;
             if self.right_align {
                 format!("{output:>width$}")
@@ -192,7 +195,7 @@ fn test_column() {
 
 #[test]
 fn test_table() {
-    let mut table = Table {
+    let table = Table {
         columns: vec![
             Rc::new(RefCell::new(Column {
                 title: "AAA".to_string(),
@@ -242,7 +245,6 @@ fn test_table() {
         ..Table::default()
     };
 
-    table.refresh();
     println!("{}", table);
 }
 
