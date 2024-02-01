@@ -1,75 +1,117 @@
-use std::fmt;
-use std::borrow::Cow;
 use colored::{Color, Colorize};
+use std::collections::HashMap;
+use std::rc::Rc;
+use std::cell::RefCell;
+use std::fmt;
 
-pub struct Table<'a> {
-    pub header: Header<'a>,
-    pub rows: Vec<Row<'a>>,
+pub struct Table {
+    pub columns: Vec<Rc<RefCell<Column>>>,
+    pub data: Vec<HashMap<String, String>>,
+    columns_cache: HashMap<String, Rc<RefCell<Column>>>,
+
+    // columns_cache: HashMap<String, &'a mut Column>,
+    // 1. error: lifetime may not live long enough: self.columns_cache.insert(column.key.clone(), column); argument requires that `'1` must outlive `'a`
+    // 2. error[E0502]: cannot borrow `table` as immutable because it is also borrowed as mutable
+    // error: 此处不能使用 &'a mut Column 来引用数据，
+    // 因为'a虽然解决了self.columns_cache.insert(column.key.clone(), column); 报错argument requires that `'1` must outlive `'a`的生命周期问题，
+    // 因为这样会使 pub fn refresh(&mut self) 必须改为 pub fn refresh(&'a mut self)，
+    // refresh 增加 'a 后，调用refresh会使self变为&mut self一致持续到Self的整个生命周期，且无法通过{}代码块来释放所有权，无法切换到&self，println!也无法使用。
+    // 解决方案：
+    // #1: columns_cache: HashMap<String, Column>, 相当于存了2份Column，增加内存使用。
+    // #2: columns_cache: HashMap<String, i32>, String是key，i32是columns: Vec<Column>,的索引，相当于自己通过index来查找和修改原始的Column，使用麻烦。
+    // #3: 使用Rc<RefCell<T>>智能指针来跳过编译器的所有权和生命周期检查，但会有运行时性能损失和运行时Panic。
 }
 
-impl<'a> fmt::Display for Table<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.header)?;
-        for row in &self.rows {
-            write!(f, "{}", row)?;
+impl Table {
+    pub fn refresh(&mut self) {
+        for column in &mut self.columns {
+            let mut col = column.borrow_mut();
+            let len = col.title.len();
+            if col.width < len {
+                col.width = len;
+            }
+            self.columns_cache.insert(col.key.clone(), column.clone());
+        }
+
+        for row in &self.data {
+            for (key, value) in row {
+                if let Some(column) = self.columns_cache.get(key) {
+                    let mut col = column.borrow_mut();
+                    let len = value.len();
+                    if col.width < len {
+                        col.width = len;
+                    }
+                }
+            }
+        }
+    }
+
+    fn fmt_header(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let last = self.columns.len() - 1;
+        for (index, column) in self.columns.iter().enumerate() {
+            if index == 0 {
+                write!(f, "{}", column.borrow())?;
+            } else if index == last {
+                write!(f, " {}\n", column.borrow())?;
+            } else {
+                write!(f, " {}", column.borrow())?;
+            }
         }
         Ok(())
     }
-}
 
-pub struct Header<'a> {
-    columns: Vec<Column<'a>>,
-}
+    fn fmt_row(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let last = self.columns.len() - 1;
+        for row in &self.data {
+            for (index, column) in self.columns.iter().enumerate() {
+                let col = column.borrow();
+                let mut text = "";
+                if let Some(value) = row.get(&col.key) {
+                    text = value;
+                }
 
-impl<'a> fmt::Display for Header<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self)
-    }
-}
-
-pub struct Row<'a> {
-    columns: Vec<Column<'a>>,
-}
-
-impl<'a> fmt::Display for Row<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        for (index, value) in self.columns.iter().enumerate() {
-            if index == 0 {
-                write!(f, "{}", value)?;
-            } else {
-                write!(f, " {}", value)?;
+                if index == 0 {
+                    write!(f, "{}", col.format(text))?;
+                } else if index == last {
+                    write!(f, " {}\n", col.format(text))?;
+                } else {
+                    write!(f, " {}", col.format(text))?;
+                }
             }
         }
         Ok(())
     }
 }
 
-pub struct Column<'a> {
-    key: &'a str,
-    value: String,
-    style: Cow<'a, Style>,
-}
-
-impl<'a> fmt::Display for Column<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.style.format(&self.value))
+impl Default for Table {
+    fn default() -> Self {
+        Self {
+            columns: Vec::new(),
+            data: Vec::new(),
+            columns_cache: HashMap::new(),
+        }
     }
 }
 
-// 派生词: Copyable Cloneable Styleable
-// pub trait Styleable {
-//     fn format(&self, value: &String) -> String;
-// }
+impl fmt::Display for Table {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.fmt_header(f)?;
+        self.fmt_row(f)?;
+        Ok(())
+    }
+}
 
-#[derive(Clone)]
-pub struct Style {
+#[derive(Debug)]
+pub struct Column {
+    pub key: String,
+    pub title: String,
+    pub width: usize,
     pub hidden: bool,
     pub right_align: bool,
-    pub width: usize,
     pub color: Option<Color>,
 }
 
-impl Style {
+impl Column {
     fn format<S: AsRef<str>>(&self, value: S) -> String {
         let value: &str = value.as_ref();
         if self.hidden {
@@ -77,8 +119,8 @@ impl Style {
         } else {
             //处理颜色
             let output = match self.color {
-                Some(item) => { value.color(item) }
-                None => { value.normal() }
+                Some(item) => value.color(item),
+                None => value.normal(),
             };
 
             //处理对齐方式
@@ -92,18 +134,24 @@ impl Style {
     }
 }
 
-impl Default for Style {
+impl Default for Column {
     fn default() -> Self {
         Self {
+            key: "".to_string(),
+            title: "".to_string(),
+            width: 0,
             hidden: false,
             right_align: false,
-            width: 0,
             color: None,
         }
     }
 }
 
-pub struct Filter {}
+impl fmt::Display for Column {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.format(&self.title))
+    }
+}
 
 #[test]
 fn test() {
@@ -127,67 +175,93 @@ fn test() {
 }
 
 #[test]
-fn test_style() {
-    let style = Style {
-        ..Style::default()
-    };
-    println!("{}", style.format("111"));
-
-    let style_ref = &Style {
-        ..Style::default()
-    };
-    println!("{}", style_ref.format(&"222".to_string()));
+fn test_hash_map() {
+    let map: HashMap<String, String> = HashMap::new();
+    let item = &map[""];
+    println!("{}", item);
 }
 
 #[test]
 fn test_column() {
-    let column = Column {
-        key: "111",
-        value: "aaa".to_string(),
-        style: Cow::Owned(Style::default()),
-    };
-    println!("{}", column);
+    let column = Column { ..Column::default() };
+    println!("{}", column.format("aaa"));
 
-    let style = Style {
-        right_align: true,
-        width: 10,
-        color: Some(Color::Cyan),
-        ..Style::default()
-    };
-    let column_ref = Column {
-        key: "222",
-        value: "bbb".to_string(),
-        style: Cow::Borrowed(&style),
-    };
-    println!("{}", column_ref);
+    let column_ref = &Column { ..Column::default() };
+    println!("{}", column_ref.format(&"bbb".to_string()));
 }
 
 #[test]
-fn test_row() {
-    let column = Column {
-        key: "111",
-        value: "aaa".to_string(),
-        style: Cow::Owned(Style::default()),
+fn test_table() {
+    let mut table = Table {
+        columns: vec![
+            Rc::new(RefCell::new(Column {
+                title: "AAA".to_string(),
+                key: "aaa".to_string(),
+                right_align: true,
+                width: 10,
+                color: Some(Color::Cyan),
+                ..Column::default()
+            })),
+            Rc::new(RefCell::new(Column {
+                title: "BBB".to_string(),
+                key: "bbb".to_string(),
+                ..Column::default()
+            })),
+            Rc::new(RefCell::new(Column {
+                title: "CCC".to_string(),
+                key: "ccc".to_string(),
+                ..Column::default()
+            })),
+        ],
+        data: vec![
+            HashMap::from([
+                ("aaa".to_string(), "1-1".to_string()),
+                ("bbb".to_string(), "1-2-222".to_string()),
+                ("ccc".to_string(), "1-3-333-333".to_string()),
+            ]),
+            HashMap::from([
+                ("aaa".to_string(), "-1".to_string()),
+            ]),
+            HashMap::from([
+                ("bbb".to_string(), "-2".to_string()),
+            ]),
+            HashMap::from([
+                ("ccc".to_string(), "-3".to_string()),
+            ]),
+            HashMap::from([
+                ("aaa".to_string(), "2-1".to_string()),
+                ("bbb".to_string(), "2-2".to_string()),
+                ("ccc".to_string(), "2-3".to_string()),
+            ]),
+            HashMap::from([
+                ("aaa".to_string(), "3-1".to_string()),
+                ("bbb".to_string(), "3-2".to_string()),
+                ("ccc".to_string(), "3-3".to_string()),
+            ]),
+        ],
+        ..Table::default()
     };
 
-    let style = Style {
-        right_align: true,
-        width: 10,
-        color: Some(Color::Cyan),
-        ..Style::default()
-    };
-    let column_ref = Column {
-        key: "222",
-        value: "bbb".to_string(),
-        style: Cow::Borrowed(&style),
-    };
+    table.refresh();
+    println!("{}", table);
+}
 
-    let column3 = Column {
-        key: "333",
-        value: "ccc".to_string(),
-        style: Cow::Owned(Style::default()),
-    };
+#[test]
+fn test4() {
+    let shared_data: Rc<RefCell<String>> = Rc::new(RefCell::new("123".to_string()));
 
-    let row = Row { columns: vec![column, column_ref, column3] };
-    println!("{}", row);
+    let shared_data_clone = Rc::clone(&shared_data);
+    println!("{:?}", shared_data);
+
+    // let a = shared_data_clone.borrow();
+    // println!("{:?}", a);
+
+    let x = shared_data_clone.clone();
+    {
+        let mut b = x.borrow_mut();
+        *b = "asdf".to_string();
+        println!("{:?}", b);
+    }
+
+    println!("{:?}", shared_data.borrow());
 }
