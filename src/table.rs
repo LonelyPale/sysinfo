@@ -45,7 +45,7 @@ impl<'a> fmt::Display for Row<'a> {
 }
 
 pub struct Column<'a> {
-    key: String,
+    key: &'a str,
     value: String,
     style: Cow<'a, Style>,
 }
@@ -67,7 +67,6 @@ pub struct Style {
     pub right_align: bool,
     pub width: usize,
     pub color: Option<Color>,
-    pub sort: i32,
 }
 
 impl Style {
@@ -100,7 +99,6 @@ impl Default for Style {
             right_align: false,
             width: 0,
             color: None,
-            sort: 0,
         }
     }
 }
@@ -112,8 +110,14 @@ fn test() {
     // std::fmt::Display::fmt();
     // std::fmt::format();
 
+    let s1 = "abc";
+    let s2 = s1;
+    println!("{:p}", s1);
+    println!("{:p}", s2);
+
     println!("({})", "111");
     println!("({})", "222".hidden());
+    println!("({})", "333".normal());
     println!("({})", "444".color(Color::Blue));
 
     assert_eq!(format!("Hello {:<5}!", "x"), "Hello x    !");
@@ -138,7 +142,7 @@ fn test_style() {
 #[test]
 fn test_column() {
     let column = Column {
-        key: "111".to_string(),
+        key: "111",
         value: "aaa".to_string(),
         style: Cow::Owned(Style::default()),
     };
@@ -151,7 +155,7 @@ fn test_column() {
         ..Style::default()
     };
     let column_ref = Column {
-        key: "222".to_string(),
+        key: "222",
         value: "bbb".to_string(),
         style: Cow::Borrowed(&style),
     };
@@ -161,7 +165,7 @@ fn test_column() {
 #[test]
 fn test_row() {
     let column = Column {
-        key: "111".to_string(),
+        key: "111",
         value: "aaa".to_string(),
         style: Cow::Owned(Style::default()),
     };
@@ -173,13 +177,13 @@ fn test_row() {
         ..Style::default()
     };
     let column_ref = Column {
-        key: "222".to_string(),
+        key: "222",
         value: "bbb".to_string(),
         style: Cow::Borrowed(&style),
     };
 
     let column3 = Column {
-        key: "333".to_string(),
+        key: "333",
         value: "ccc".to_string(),
         style: Cow::Owned(Style::default()),
     };
