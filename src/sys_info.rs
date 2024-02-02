@@ -194,41 +194,52 @@ impl SysInfo {
             Column {
                 title: "Device".to_string(),
                 key: "name".to_string(),
+                color: Some(Color::Red),
                 ..Column::default()
             },
             Column {
                 title: "Kind".to_string(),
                 key: "kind".to_string(),
+                color: Some(Color::Green),
                 ..Column::default()
             },
             Column {
                 title: "Filesystem".to_string(),
                 key: "file_system".to_string(),
+                color: Some(Color::Yellow),
                 ..Column::default()
             },
             Column {
                 title: "Total".to_string(),
                 key: "total_space".to_string(),
+                right_align: true,
+                color: Some(Color::Blue),
                 ..Column::default()
             },
             Column {
                 title: "Used".to_string(),
                 key: "used_space".to_string(),
+                right_align: true,
+                color: Some(Color::Magenta),
                 ..Column::default()
             },
             Column {
                 title: "Free".to_string(),
                 key: "free_space".to_string(),
+                right_align: true,
+                color: Some(Color::Cyan),
                 ..Column::default()
             },
             Column {
                 title: "Avail".to_string(),
                 key: "available_space".to_string(),
+                right_align: true,
                 ..Column::default()
             },
             Column {
                 title: "Use%".to_string(),
                 key: "usage_rate".to_string(),
+                right_align: true,
                 ..Column::default()
             },
             Column {
