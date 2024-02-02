@@ -4,6 +4,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::fmt;
 
+//智能指针版本
 pub struct Table {
     pub columns: Vec<Rc<RefCell<Column>>>,
     pub data: Vec<HashMap<String, String>>,
@@ -23,7 +24,17 @@ pub struct Table {
 }
 
 impl Table {
-    pub fn refresh(&self) {
+    pub fn new(columns: Vec<Rc<RefCell<Column>>>, data: Vec<HashMap<String, String>>) -> Self {
+        let table = Self {
+            columns,
+            data,
+            columns_cache: RefCell::new(Default::default()),
+        };
+        table.refresh();
+        table
+    }
+
+    fn refresh(&self) {
         let mut columns_cache = self.columns_cache.borrow_mut();
 
         for column in &self.columns {
@@ -266,4 +277,20 @@ fn test4() {
     }
 
     println!("{:?}", shared_data.borrow());
+}
+
+#[derive(Debug)]
+struct Tab {
+    name: i32,
+}
+
+impl Tab {
+    fn r(&mut self) { self.name = 111 }
+}
+
+#[test]
+fn test123() {
+    let mut t = Tab{ name: 1 };
+    t.r();
+    println!("{:?}", t);
 }

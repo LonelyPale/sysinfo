@@ -3,6 +3,7 @@ use colored::Colorize;
 
 use crate::common::PrettySize;
 use crate::disk::disk_info;
+use crate::table::Table;
 
 const KIND: &str = "kind";
 const NAME: &str = "name";
@@ -199,6 +200,12 @@ impl SysInfo {
     }
 
     pub fn print_disk(&self, no_color: bool) {
+        // let table = Table{
+        //     columns: vec![],
+        //     data: vec![],
+        //     ..Table::default()
+        // };
+
         let mut infos: Vec<DiskInfo> = Vec::new();
         let mut style: DiskInfoStyle = DiskInfoStyle {
             kind: InfoStyle { name: KIND.to_string(), width: KIND.len() },
