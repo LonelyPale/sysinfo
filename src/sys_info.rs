@@ -1,20 +1,10 @@
+use std::collections::HashMap;
 use sysinfo::{System, RefreshKind, CpuRefreshKind, MemoryRefreshKind, Components, Disks};
-use colored::Colorize;
+use colored::{Color, Colorize};
 
 use crate::common::PrettySize;
 use crate::disk::disk_info;
-use crate::table::Table;
-
-const KIND: &str = "kind";
-const NAME: &str = "name";
-const FILE_SYSTEM: &str = "file_system";
-const MOUNT_POINT: &str = "mount_point";
-const TOTAL: &str = "total";
-const USED: &str = "used";
-const FREE: &str = "free";
-const AVAILABLE: &str = "available";
-const USAGE_RATE: &str = "usage_rate";
-const IS_REMOVABLE: &str = "is_removable";
+use crate::table::{Table, Column};
 
 #[derive(Debug)]
 pub struct SysInfo {
@@ -107,12 +97,12 @@ impl SysInfo {
         let host_name = System::host_name().unwrap_or_default();
 
         if no_color {
-            println!("{} NAME:           {}", "System", NAME);
+            println!("{} NAME:           {}", "System", name);
             println!("{} kernel version: {}", "System", kernel_version);
             println!("{} OS version:     {}", "System", os_version);
             println!("{} host NAME:      {}", "System", host_name);
         } else {
-            println!("{} NAME:           {}", "System".red(), NAME.blue());
+            println!("{} NAME:           {}", "System".red(), name.blue());
             println!("{} kernel version: {}", "System".red(), kernel_version.cyan());
             println!("{} OS version:     {}", "System".red(), os_version.green());
             println!("{} host NAME:      {}", "System".red(), host_name.purple());
@@ -200,34 +190,68 @@ impl SysInfo {
     }
 
     pub fn print_disk(&self, no_color: bool) {
-        // let table = Table{
-        //     columns: vec![],
-        //     data: vec![],
-        //     ..Table::default()
-        // };
+        let columns = vec![
+            Column {
+                title: "Device".to_string(),
+                key: "name".to_string(),
+                ..Column::default()
+            },
+            Column {
+                title: "Kind".to_string(),
+                key: "kind".to_string(),
+                ..Column::default()
+            },
+            Column {
+                title: "Filesystem".to_string(),
+                key: "file_system".to_string(),
+                ..Column::default()
+            },
+            Column {
+                title: "Total".to_string(),
+                key: "total_space".to_string(),
+                ..Column::default()
+            },
+            Column {
+                title: "Used".to_string(),
+                key: "used_space".to_string(),
+                ..Column::default()
+            },
+            Column {
+                title: "Free".to_string(),
+                key: "free_space".to_string(),
+                ..Column::default()
+            },
+            Column {
+                title: "Avail".to_string(),
+                key: "available_space".to_string(),
+                ..Column::default()
+            },
+            Column {
+                title: "Use%".to_string(),
+                key: "usage_rate".to_string(),
+                ..Column::default()
+            },
+            Column {
+                title: "MountPoint".to_string(),
+                key: "mount_point".to_string(),
+                ..Column::default()
+            },
+            Column {
+                title: "Removable".to_string(),
+                key: "is_removable".to_string(),
+                ..Column::default()
+            },
+        ];
 
-        let mut infos: Vec<DiskInfo> = Vec::new();
-        let mut style: DiskInfoStyle = DiskInfoStyle {
-            kind: InfoStyle { name: KIND.to_string(), width: KIND.len() },
-            name: InfoStyle { name: NAME.to_string(), width: NAME.len() },
-            file_system: InfoStyle { name: FILE_SYSTEM.to_string(), width: FILE_SYSTEM.len() },
-            mount_point: InfoStyle { name: MOUNT_POINT.to_string(), width: MOUNT_POINT.len() },
-            total: InfoStyle { name: TOTAL.to_string(), width: TOTAL.len() },
-            used: InfoStyle { name: USED.to_string(), width: USED.len() },
-            free: InfoStyle { name: FREE.to_string(), width: FREE.len() },
-            available: InfoStyle { name: AVAILABLE.to_string(), width: AVAILABLE.len() },
-            usage_rate: InfoStyle { name: USAGE_RATE.to_string(), width: USAGE_RATE.len() },
-            is_removable: InfoStyle { name: IS_REMOVABLE.to_string(), width: IS_REMOVABLE.len() },
-        };
-
+        let mut data = Vec::new();
         let disks = Disks::new_with_refreshed_list();
         for disk in &disks {
             let kind: String = disk.kind().to_string();
             let name: String = disk.name().to_str().unwrap_or_default().to_string();
             let file_system: String = disk.file_system().to_str().unwrap_or_default().to_string();
             let mount_point: String = disk.mount_point().to_str().unwrap_or_default().to_string();
-            let total: String = disk.total_space().pretty_size();
-            let available: String = disk.available_space().pretty_size();
+            let total_space: String = disk.total_space().pretty_size();
+            let available_space: String = disk.available_space().pretty_size();
             let is_removable: String = disk.is_removable().to_string();
 
             let mut free_size: u64 = 0;
@@ -236,79 +260,32 @@ impl SysInfo {
                 Ok(res) => { free_size = res.f_bfree * res.f_bsize }
                 Err(err) => { eprintln!("print_disk disk_info error: {}", err.red()) }
             }
-            let free: String = free_size.pretty_size();
+            let free_space: String = free_size.pretty_size();
 
             let used_size = disk.total_space() - free_size;
-            let used = used_size.pretty_size();
+            let used_space = used_size.pretty_size();
 
             let usage_rate_num = used_size as f64 / disk.total_space() as f64 * 100.;
             let usage_rate = format!("{usage_rate_num:.2}%", );
             // let usage_rate = format!("{usage_rate_num:.0}%", );
 
-            if kind.len() > style.kind.width {
-                style.kind.width = kind.len();
-            }
-            if name.len() > style.name.width {
-                style.name.width = name.len();
-            }
-            if file_system.len() > style.file_system.width {
-                style.file_system.width = file_system.len();
-            }
-            if mount_point.len() > style.mount_point.width {
-                style.mount_point.width = mount_point.len();
-            }
-            if total.len() > style.total.width {
-                style.total.width = total.len();
-            }
-            if used.len() > style.used.width {
-                style.used.width = used.len();
-            }
-            if free.len() > style.free.width {
-                style.free.width = free.len();
-            }
-            if available.len() > style.available.width {
-                style.available.width = available.len();
-            }
-            if usage_rate.len() > style.usage_rate.width {
-                style.usage_rate.width = usage_rate.len();
-            }
-            if is_removable.len() > style.is_removable.width {
-                style.is_removable.width = is_removable.len();
-            }
-
-            let disk_info = DiskInfo {
-                kind,
-                name,
-                file_system,
-                mount_point,
-                total,
-                used,
-                free,
-                available,
-                usage_rate,
-                is_removable,
-            };
-            infos.push(disk_info);
+            data.push(HashMap::from([
+                ("name".to_string(), name),
+                ("kind".to_string(), kind),
+                ("file_system".to_string(), file_system),
+                ("total_space".to_string(), total_space),
+                ("used_space".to_string(), used_space),
+                ("free_space".to_string(), free_space),
+                ("available_space".to_string(), available_space),
+                ("usage_rate".to_string(), usage_rate),
+                ("mount_point".to_string(), mount_point),
+                ("is_removable".to_string(), is_removable),
+            ]));
         }
 
-        let kind_width = style.kind.width;
-        let name_width = style.name.width;
-        let file_system_width = style.file_system.width;
-        let mount_point_width = style.mount_point.width;
-        let total_width = style.total.width;
-        let used_width = style.used.width;
-        let free_width = style.free.width;
-        let available_width = style.available.width;
-        let usage_rate = style.usage_rate.width;
-        let is_removable_width = style.is_removable.width;
-        println!("{:kind_width$} {:name_width$} {:file_system_width$} {:>total_width$} {:>used_width$} {:>free_width$} {:>available_width$} {:>usage_rate$} {:mount_point_width$} {:is_removable_width$}",
-                 KIND, NAME, FILE_SYSTEM, TOTAL, USED, FREE, AVAILABLE, USAGE_RATE, MOUNT_POINT, IS_REMOVABLE);
-        for info in infos {
-            println!("{:kind_width$} {:name_width$} {:file_system_width$} {:>total_width$} {:>used_width$} {:>free_width$} {:>available_width$} {:>usage_rate$} {:mount_point_width$} {:is_removable_width$}",
-                     info.kind, info.name, info.file_system, info.total, info.used, info.free, info.available, info.usage_rate, info.mount_point, info.is_removable);
-        }
-
-        println!()
+        let table = Table::new(columns, data);
+        println!("{}", table);
+        println!();
     }
 }
 
