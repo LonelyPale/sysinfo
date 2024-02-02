@@ -1,12 +1,14 @@
 use colored::{Color, Colorize};
 use std::collections::HashMap;
+use std::cell::RefCell;
+use std::rc::Rc;
 use std::fmt;
 
-//标准版本：已完成
+//智能指针版本：已完成
 pub struct Table {
-    columns: Vec<Column>,
-    data: Vec<HashMap<String, String>>,
-    columns_cache: HashMap<String, usize>,
+    pub columns: Vec<Rc<RefCell<Column>>>,
+    pub data: Vec<HashMap<String, String>>,
+    columns_cache: RefCell<HashMap<String, Rc<RefCell<Column>>>>,
 
     // columns_cache: HashMap<String, &'a mut Column>,
     // 1. error: lifetime may not live long enough: self.columns_cache.insert(column.key.clone(), column); argument requires that `'1` must outlive `'a`
@@ -18,36 +20,39 @@ pub struct Table {
     // 解决方案：
     // #1: columns_cache: HashMap<String, Column>, 相当于存了2份Column，增加内存使用。
     // #2: columns_cache: HashMap<String, i32>, String是key，i32是columns: Vec<Column>,的索引，相当于自己通过index来查找和修改原始的Column，使用麻烦。
-    // #3: 使用Rc<RefCell<T>>智能指针来跳过编译阶段的所有权和生命周期检查(运行时检查)，但会有运行时性能损失和运行时Panic。
+    // #3: 使用Rc<RefCell<T>>智能指针来跳过编译器的所有权和生命周期检查，但会有运行时性能损失和运行时Panic。
 }
 
 impl Table {
-    pub fn new(columns: Vec<Column>, data: Vec<HashMap<String, String>>) -> Self {
-        let mut table = Self {
+    pub fn new(columns: Vec<Rc<RefCell<Column>>>, data: Vec<HashMap<String, String>>) -> Self {
+        let table = Self {
             columns,
             data,
-            ..Self::default()
+            columns_cache: RefCell::new(Default::default()),
         };
-        table.refresh_cache();
+        table.refresh();
         table
     }
 
-    fn refresh_cache(&mut self) {
-        for (index, column) in self.columns.iter_mut().enumerate() {
-            let len = column.title.len();
-            if column.width < len {
-                column.width = len;
+    fn refresh(&self) {
+        let mut columns_cache = self.columns_cache.borrow_mut();
+
+        for column in &self.columns {
+            let mut col = column.borrow_mut();
+            let len = col.title.len();
+            if col.width < len {
+                col.width = len;
             }
-            self.columns_cache.insert(column.key.clone(), index);
+            columns_cache.insert(col.key.clone(), column.clone());
         }
 
         for row in &self.data {
             for (key, value) in row {
-                if let Some(index) = self.columns_cache.get(key) {
-                    let column = &mut self.columns[*index];
+                if let Some(column) = columns_cache.get(key) {
+                    let mut col = column.borrow_mut();
                     let len = value.len();
-                    if column.width < len {
-                        column.width = len;
+                    if col.width < len {
+                        col.width = len;
                     }
                 }
             }
@@ -58,11 +63,11 @@ impl Table {
         let last = self.columns.len() - 1;
         for (index, column) in self.columns.iter().enumerate() {
             if index == 0 {
-                write!(f, "{}", column)?;
+                write!(f, "{}", column.borrow())?;
             } else if index == last {
-                write!(f, " {}\n", column)?;
+                write!(f, " {}\n", column.borrow())?;
             } else {
-                write!(f, " {}", column)?;
+                write!(f, " {}", column.borrow())?;
             }
         }
         Ok(())
@@ -72,17 +77,18 @@ impl Table {
         let last = self.columns.len() - 1;
         for row in &self.data {
             for (index, column) in self.columns.iter().enumerate() {
+                let col = column.borrow();
                 let mut text = "";
-                if let Some(value) = row.get(&column.key) {
+                if let Some(value) = row.get(&col.key) {
                     text = value;
                 }
 
                 if index == 0 {
-                    write!(f, "{}", column.format(text))?;
+                    write!(f, "{}", col.format(text))?;
                 } else if index == last {
-                    write!(f, " {}\n", column.format(text))?;
+                    write!(f, " {}\n", col.format(text))?;
                 } else {
-                    write!(f, " {}", column.format(text))?;
+                    write!(f, " {}", col.format(text))?;
                 }
             }
         }
@@ -95,20 +101,21 @@ impl Default for Table {
         Self {
             columns: Vec::new(),
             data: Vec::new(),
-            columns_cache: HashMap::new(),
+            columns_cache: RefCell::new(HashMap::new()),
         }
     }
 }
 
 impl fmt::Display for Table {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.refresh();
         self.fmt_header(f)?;
         self.fmt_row(f)?;
         Ok(())
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Column {
     pub key: String,
     pub title: String,
@@ -199,26 +206,26 @@ fn test_column() {
 
 #[test]
 fn test_table() {
-    let mut table = Table {
+    let table = Table {
         columns: vec![
-            Column {
+            Rc::new(RefCell::new(Column {
                 title: "AAA".to_string(),
                 key: "aaa".to_string(),
                 right_align: true,
                 width: 10,
                 color: Some(Color::Cyan),
                 ..Column::default()
-            },
-            Column {
+            })),
+            Rc::new(RefCell::new(Column {
                 title: "BBB".to_string(),
                 key: "bbb".to_string(),
                 ..Column::default()
-            },
-            Column {
+            })),
+            Rc::new(RefCell::new(Column {
                 title: "CCC".to_string(),
                 key: "ccc".to_string(),
                 ..Column::default()
-            },
+            })),
         ],
         data: vec![
             HashMap::from([
@@ -249,16 +256,13 @@ fn test_table() {
         ..Table::default()
     };
 
-    table.refresh_cache();
     println!("{}", table);
 }
 
 #[test]
 fn test4() {
-    use std::cell::RefCell;
-    use std::rc::Rc;
-
     let shared_data: Rc<RefCell<String>> = Rc::new(RefCell::new("123".to_string()));
+
     let shared_data_clone = Rc::clone(&shared_data);
     println!("{:?}", shared_data);
 
@@ -281,29 +285,12 @@ struct Tab {
 }
 
 impl Tab {
-    fn new() -> Self {
-        let mut t = Self { name: 0 };
-        t.r();
-        t
-    }
     fn r(&mut self) { self.name = 111 }
 }
 
 #[test]
 fn test123() {
-    let mut t = Tab { name: 1 };
+    let mut t = Tab{ name: 1 };
     t.r();
     println!("{:?}", t);
-
-    let t = Tab::new();
-    println!("{:?}", t);
-}
-
-#[test]
-fn test5() {
-    let mut a = 111;
-    let b = &mut a;
-    *b = 222;
-    println!("{}", b);
-    println!("{}", a);
 }

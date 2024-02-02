@@ -2,7 +2,7 @@ use colored::{Color, Colorize};
 use std::borrow::Cow;
 use std::fmt;
 
-//基础版本
+//基础版本：未完成
 pub struct Table<'a> {
     pub header: Header<'a>,
     pub rows: Vec<Row<'a>>,
