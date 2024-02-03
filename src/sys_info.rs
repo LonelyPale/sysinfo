@@ -79,7 +79,7 @@ impl SysInfo {
         self.print_cpu(no_color);
         self.print_memory(no_color);
         self.print_swap(no_color);
-        self.print_disk(no_color);
+        self.print_disk(no_color, true, true);
 
         // Components temperature:
         let components = Components::new_with_refreshed_list();
@@ -189,7 +189,7 @@ impl SysInfo {
         println!()
     }
 
-    pub fn print_disk(&self, no_color: bool) {
+    pub fn print_disk(&self, no_color: bool, all: bool, total: bool) {
         let columns = vec![
             Column {
                 title: "Device".to_string(),
@@ -233,29 +233,39 @@ impl SysInfo {
             Column {
                 title: "Avail".to_string(),
                 key: "available_space".to_string(),
+                hidden: all,
                 right_align: true,
+                color: Some(Color::Blue),
                 ..Column::default()
             },
             Column {
                 title: "Use%".to_string(),
                 key: "usage_rate".to_string(),
                 right_align: true,
+                color: Some(Color::Magenta),
                 ..Column::default()
             },
             Column {
                 title: "MountPoint".to_string(),
                 key: "mount_point".to_string(),
+                color: Some(Color::BrightRed),
                 ..Column::default()
             },
             Column {
                 title: "Removable".to_string(),
                 key: "is_removable".to_string(),
+                hidden: all,
                 ..Column::default()
             },
         ];
 
         let mut data = Vec::new();
         let disks = Disks::new_with_refreshed_list();
+        let mut total_total = 0;
+        let mut total_used = 0;
+        let mut total_free = 0;
+        let mut total_avail = 0;
+        let mut total_usage = 0.;
         for disk in &disks {
             let kind: String = disk.kind().to_string();
             let name: String = disk.name().to_str().unwrap_or_default().to_string();
@@ -291,6 +301,31 @@ impl SysInfo {
                 ("usage_rate".to_string(), usage_rate),
                 ("mount_point".to_string(), mount_point),
                 ("is_removable".to_string(), is_removable),
+            ]));
+
+            if total {
+                total_total += disk.total_space();
+                total_used += used_size;
+                total_free += free_size;
+                total_avail += disk.available_space();
+                total_usage += usage_rate_num;
+            }
+        }
+
+        if total {
+            total_usage = total_usage / disks.len() as f64;
+            let total_usage_rate = format!("{total_usage:.2}%", );
+            data.push(HashMap::from([
+                ("name".to_string(), "total".to_string()),
+                ("kind".to_string(), "-".to_string()),
+                ("file_system".to_string(), "-".to_string()),
+                ("total_space".to_string(), total_total.pretty_size()),
+                ("used_space".to_string(), total_used.pretty_size()),
+                ("free_space".to_string(), total_free.pretty_size()),
+                ("available_space".to_string(), total_avail.pretty_size()),
+                ("usage_rate".to_string(), total_usage_rate),
+                ("mount_point".to_string(), "-".to_string()),
+                ("is_removable".to_string(), "-".to_string()),
             ]));
         }
 
