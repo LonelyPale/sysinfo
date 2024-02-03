@@ -189,7 +189,7 @@ impl SysInfo {
         println!()
     }
 
-    pub fn print_disk(&self, no_color: bool, all: bool, total: bool) {
+    pub fn print_disk(&self, all: bool, sort: bool, total: bool) {
         demo_style();
 
         let columns = vec![
@@ -313,6 +313,10 @@ impl SysInfo {
                 total_avail += disk.available_space();
                 total_usage += usage_rate_num;
             }
+        }
+
+        if sort {
+            data.sort_by(|a, b| a.get("name").unwrap_or(&"".to_string()).cmp(b.get("name").unwrap_or(&"".to_string())));
         }
 
         if total {

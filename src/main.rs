@@ -47,9 +47,13 @@ enum Commands {
 
     /// Print disk info
     Disk {
-        /// Show all fields
+        /// Print all fields
         #[arg(short, long)]
         all: bool,
+
+        /// Print by sort
+        #[arg(short, long)]
+        sort: bool,
 
         /// Generate total value
         #[arg(short, long)]
@@ -77,8 +81,8 @@ fn main() {
         Some(Commands::Swap {}) => {
             SysInfo::new_swap().print_swap(args.no_color);
         }
-        Some(Commands::Disk { all, total }) => {
-            SysInfo::new().print_disk(args.no_color,all,total);
+        Some(Commands::Disk { all, sort, total }) => {
+            SysInfo::new().print_disk(all, sort, total);
         }
         None => {
             SysInfo::new_all().print_all(args.no_color);
