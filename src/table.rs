@@ -60,9 +60,9 @@ impl Table {
             if index == 0 {
                 write!(f, "{}", column)?;
             } else if index == last {
-                write!(f, " {}\n", column)?;
+                write!(f, "  {}\n", column)?;
             } else {
-                write!(f, " {}", column)?;
+                write!(f, "  {}", column)?;
             }
         }
         Ok(())
@@ -80,9 +80,9 @@ impl Table {
                 if index == 0 {
                     write!(f, "{}", column.format(text))?;
                 } else if index == last {
-                    write!(f, " {}\n", column.format(text))?;
+                    write!(f, "  {}\n", column.format(text))?;
                 } else {
-                    write!(f, " {}", column.format(text))?;
+                    write!(f, "  {}", column.format(text))?;
                 }
             }
         }

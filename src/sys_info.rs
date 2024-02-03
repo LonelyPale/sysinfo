@@ -200,14 +200,14 @@ impl SysInfo {
                 ..Column::default()
             },
             Column {
-                title: "Kind".to_string(),
-                key: "kind".to_string(),
+                title: "Type".to_string(),
+                key: "file_system".to_string(),
                 color: Some(Color::Green),
                 ..Column::default()
             },
             Column {
-                title: "Type".to_string(),
-                key: "file_system".to_string(),
+                title: "Kind".to_string(),
+                key: "kind".to_string(),
                 color: Some(Color::Yellow),
                 ..Column::default()
             },
@@ -237,25 +237,26 @@ impl SysInfo {
                 key: "available_space".to_string(),
                 hidden: !all,
                 right_align: true,
-                color: Some(Color::Blue),
+                color: Some(Color::BrightRed),
                 ..Column::default()
             },
             Column {
                 title: "Use%".to_string(),
                 key: "usage_rate".to_string(),
                 right_align: true,
-                color: Some(Color::Magenta),
+                color: Some(Color::BrightGreen),
                 ..Column::default()
             },
             Column {
                 title: "MountPoint".to_string(),
                 key: "mount_point".to_string(),
-                color: Some(Color::BrightRed),
+                color: Some(Color::BrightYellow),
                 ..Column::default()
             },
             Column {
                 title: "Removable".to_string(),
                 key: "is_removable".to_string(),
+                color: Some(Color::BrightBlue),
                 hidden: !all,
                 ..Column::default()
             },
@@ -294,8 +295,8 @@ impl SysInfo {
 
             data.push(HashMap::from([
                 ("name".to_string(), name),
-                ("kind".to_string(), kind),
                 ("file_system".to_string(), file_system),
+                ("kind".to_string(), kind),
                 ("total_space".to_string(), total_space),
                 ("used_space".to_string(), used_space),
                 ("free_space".to_string(), free_space),
@@ -319,15 +320,11 @@ impl SysInfo {
             let total_usage_rate = format!("{total_usage:.2}%", );
             data.push(HashMap::from([
                 ("name".to_string(), "total".to_string()),
-                ("kind".to_string(), "-".to_string()),
-                ("file_system".to_string(), "-".to_string()),
                 ("total_space".to_string(), total_total.pretty_size()),
                 ("used_space".to_string(), total_used.pretty_size()),
                 ("free_space".to_string(), total_free.pretty_size()),
                 ("available_space".to_string(), total_avail.pretty_size()),
                 ("usage_rate".to_string(), total_usage_rate),
-                ("mount_point".to_string(), "-".to_string()),
-                ("is_removable".to_string(), "-".to_string()),
             ]));
         }
 
