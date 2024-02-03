@@ -190,7 +190,7 @@ impl SysInfo {
     }
 
     pub fn print_disk(&self, no_color: bool, all: bool, total: bool) {
-        demo_color();
+        demo_style();
 
         let columns = vec![
             Column {
