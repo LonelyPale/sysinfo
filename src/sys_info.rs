@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use sysinfo::{System, RefreshKind, CpuRefreshKind, MemoryRefreshKind, Components, Disks};
-use colored::{Color, Colorize};
+use colored::{Color, Colorize, CustomColor};
 
 use crate::common::PrettySize;
 use crate::disk::disk_info;
@@ -190,6 +190,24 @@ impl SysInfo {
     }
 
     pub fn print_disk(&self, no_color: bool, all: bool, total: bool) {
+        println!("{}", "truecolor".truecolor(0, 255, 136));
+        println!("{}", "Black".black());
+        println!("{}", "BrightBlack".bright_black());
+        println!("{}", "Red".red());
+        println!("{}", "BrightRed".bright_red());
+        println!("{}", "Green".green());
+        println!("{}", "BrightGreen".bright_green());
+        println!("{}", "Yellow".yellow());
+        println!("{}", "BrightYellow".bright_yellow());
+        println!("{}", "Blue".blue());
+        println!("{}", "BrightBlue".bright_blue());
+        println!("{}", "Magenta".magenta());
+        println!("{}", "BrightMagenta".bright_magenta());
+        println!("{}", "Cyan".cyan());
+        println!("{}", "BrightCyan".bright_cyan());
+        println!("{}", "White".white());
+        println!("{}", "BrightWhite".bright_white());
+
         let columns = vec![
             Column {
                 title: "Device".to_string(),
@@ -233,7 +251,7 @@ impl SysInfo {
             Column {
                 title: "Avail".to_string(),
                 key: "available_space".to_string(),
-                hidden: all,
+                hidden: !all,
                 right_align: true,
                 color: Some(Color::Blue),
                 ..Column::default()
@@ -254,7 +272,7 @@ impl SysInfo {
             Column {
                 title: "Removable".to_string(),
                 key: "is_removable".to_string(),
-                hidden: all,
+                hidden: !all,
                 ..Column::default()
             },
         ];
