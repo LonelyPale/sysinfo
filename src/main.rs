@@ -59,6 +59,11 @@ enum Commands {
 
 fn main() {
     let args = Cli::parse();
+
+    if args.no_color {
+        colored::control::set_override(false);
+    }
+
     match args.command {
         Some(Commands::System {}) => {
             SysInfo::new().print_system(args.no_color);

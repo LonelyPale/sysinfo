@@ -190,23 +190,7 @@ impl SysInfo {
     }
 
     pub fn print_disk(&self, no_color: bool, all: bool, total: bool) {
-        println!("{}", "truecolor".truecolor(0, 255, 136));
-        println!("{}", "Black".black());
-        println!("{}", "BrightBlack".bright_black());
-        println!("{}", "Red".red());
-        println!("{}", "BrightRed".bright_red());
-        println!("{}", "Green".green());
-        println!("{}", "BrightGreen".bright_green());
-        println!("{}", "Yellow".yellow());
-        println!("{}", "BrightYellow".bright_yellow());
-        println!("{}", "Blue".blue());
-        println!("{}", "BrightBlue".bright_blue());
-        println!("{}", "Magenta".magenta());
-        println!("{}", "BrightMagenta".bright_magenta());
-        println!("{}", "Cyan".cyan());
-        println!("{}", "BrightCyan".bright_cyan());
-        println!("{}", "White".white());
-        println!("{}", "BrightWhite".bright_white());
+        demo_color();
 
         let columns = vec![
             Column {
@@ -222,7 +206,7 @@ impl SysInfo {
                 ..Column::default()
             },
             Column {
-                title: "Filesystem".to_string(),
+                title: "Type".to_string(),
                 key: "file_system".to_string(),
                 color: Some(Color::Yellow),
                 ..Column::default()
@@ -396,5 +380,70 @@ fn test_print_swap() {
 
 #[test]
 fn test_print_disk() {
-    SysInfo::new().print_disk(false);
+    SysInfo::new().print_disk(false, false, false);
+}
+
+fn demo_color() {
+    println!("demo_color:");
+    println!("{}", "Black".black());
+    println!("{}", "BrightBlack".bright_black());
+    println!("{}", "Red".red());
+    println!("{}", "BrightRed".bright_red());
+    println!("{}", "Green".green());
+    println!("{}", "BrightGreen".bright_green());
+    println!("{}", "Yellow".yellow());
+    println!("{}", "BrightYellow".bright_yellow());
+    println!("{}", "Blue".blue());
+    println!("{}", "BrightBlue".bright_blue());
+    println!("{}", "Magenta".magenta());
+    println!("{}", "BrightMagenta".bright_magenta());
+    println!("{}", "Cyan".cyan());
+    println!("{}", "BrightCyan".bright_cyan());
+    println!("{}", "White".white());
+    println!("{}", "BrightWhite".bright_white());
+    println!("{}", "TrueColor".truecolor(0, 255, 136));
+    println!();
+}
+
+fn demo_style() {
+    println!("demo_style:");
+    println!("{}", "Clear".clear());
+    println!("{}", "Bold".bold());
+    println!("{}", "Dimmed".dimmed());
+    println!("{}", "Underline".underline());
+    println!("{}", "Reversed".reversed());
+    println!("{}", "Italic".italic());
+    println!("{}", "Blink".blink());
+    println!("{}", "Hidden".hidden());
+    println!("{}", "Strikethrough".strikethrough());
+    println!();
+}
+
+fn demo_control() {
+    println!("demo_control:");
+    // this will be yellow if your environment allow it
+    println!("{}", "some warning-1".yellow());
+    // now , this will be always yellow
+    colored::control::set_override(true);
+    println!("{}", "some warning-2".yellow());
+    println!("{}", "some warning-20");
+    println!("{}", "some warning-21".red());
+    // now, this will be never yellow
+    colored::control::set_override(false);
+    println!("{}", "some warning-3".yellow());
+    println!("{}", "some warning-30".red());
+    println!("{}", "some warning-31".bold().underline());
+    // let the environment decide again
+    colored::control::unset_override();
+    println!("{}", "some warning-4".yellow());
+    println!("{}", "some warning-40".red());
+    println!("{}", "some warning-41".bold().underline());
+    println!();
+}
+
+#[test]
+fn test_demo() {
+    demo_color();
+    demo_style();
+    demo_control();
 }
