@@ -1,12 +1,12 @@
 mod common;
-mod sys_info;
 mod disk;
+mod sys_info;
 mod table;
 
+use clap::{ArgAction, Parser, Subcommand};
 use std::fmt::Debug;
-use clap::{Parser, Subcommand, ArgAction};
 
-use sys_info::{SysInfo};
+use sys_info::SysInfo;
 
 #[derive(Debug, Parser)] // requires `derive` feature
 #[command(name = "sysinfo", bin_name = "sysinfo")]
@@ -86,8 +86,7 @@ fn main() {
         }
         None => {
             SysInfo::new_all().print_all(args.no_color);
-        }
-        // _ => {
+        } // _ => {
         //     println!("testing...");
         // }
     }

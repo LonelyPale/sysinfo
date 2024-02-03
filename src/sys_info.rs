@@ -1,10 +1,10 @@
+use colored::{Color, Colorize, Style, Styles};
 use std::collections::HashMap;
-use sysinfo::{System, RefreshKind, CpuRefreshKind, MemoryRefreshKind, Components, Disks};
-use colored::{Color, Colorize, CustomColor};
+use sysinfo::{Components, CpuRefreshKind, Disks, MemoryRefreshKind, RefreshKind, System};
 
 use crate::common::PrettySize;
 use crate::disk::disk_info;
-use crate::table::{Table, Column};
+use crate::table::{Column, Table};
 
 #[derive(Debug)]
 pub struct SysInfo {
@@ -66,11 +66,15 @@ impl SysInfo {
     }
 
     pub fn new_memory() -> Self {
-        Self::new_with_specifics(RefreshKind::new().with_memory(MemoryRefreshKind::new().with_ram()))
+        Self::new_with_specifics(
+            RefreshKind::new().with_memory(MemoryRefreshKind::new().with_ram()),
+        )
     }
 
     pub fn new_swap() -> Self {
-        Self::new_with_specifics(RefreshKind::new().with_memory(MemoryRefreshKind::new().with_swap()))
+        Self::new_with_specifics(
+            RefreshKind::new().with_memory(MemoryRefreshKind::new().with_swap()),
+        )
     }
 
     /// 打印全部信息
@@ -103,7 +107,11 @@ impl SysInfo {
             println!("{} host NAME:      {}", "System", host_name);
         } else {
             println!("{} NAME:           {}", "System".red(), name.blue());
-            println!("{} kernel version: {}", "System".red(), kernel_version.cyan());
+            println!(
+                "{} kernel version: {}",
+                "System".red(),
+                kernel_version.cyan()
+            );
             println!("{} OS version:     {}", "System".red(), os_version.green());
             println!("{} host NAME:      {}", "System".red(), host_name.purple());
         }
@@ -126,9 +134,18 @@ impl SysInfo {
         let cpu_thread = format!("{}", cpus.len());
 
         if no_color {
-            println!("{} UsedPercent: {}, Core: {}, Thread: {}", "Cpu", cpu_usage, cpu_core, cpu_thread);
+            println!(
+                "{} UsedPercent: {}, Core: {}, Thread: {}",
+                "Cpu", cpu_usage, cpu_core, cpu_thread
+            );
         } else {
-            println!("{} UsedPercent: {}, Core: {}, Thread: {}", "Cpu".red(), cpu_usage.blue(), cpu_core.cyan(), cpu_thread.green());
+            println!(
+                "{} UsedPercent: {}, Core: {}, Thread: {}",
+                "Cpu".red(),
+                cpu_usage.blue(),
+                cpu_core.cyan(),
+                cpu_thread.green()
+            );
         }
 
         for cpu in cpus {
@@ -138,9 +155,19 @@ impl SysInfo {
             let vendor_id = cpu.vendor_id();
             let brand = cpu.brand();
             if no_color {
-                println!("{} {} {} {} {}", name, cpu_usage, frequency, vendor_id, brand);
+                println!(
+                    "{} {} {} {} {}",
+                    name, cpu_usage, frequency, vendor_id, brand
+                );
             } else {
-                println!("{} {} {} {} {}", name.yellow(), cpu_usage.blue(), frequency.cyan(), vendor_id.green(), brand.purple());
+                println!(
+                    "{} {} {} {} {}",
+                    name.yellow(),
+                    cpu_usage.blue(),
+                    frequency.cyan(),
+                    vendor_id.green(),
+                    brand.purple()
+                );
             }
         }
 
@@ -152,19 +179,32 @@ impl SysInfo {
         // 通常，“FREE 空闲”内存是指未分配的内存，而“AVAILABLE 可用”内存是指可供（重新）使用的内存。
         // ⚠️ Windows 和 FreeBSD 不报告“可用”内存，因此 free_memory 与 available_memory 的值相同。
 
-        self.system.refresh_memory_specifics(MemoryRefreshKind::new().with_ram());
+        self.system
+            .refresh_memory_specifics(MemoryRefreshKind::new().with_ram());
 
         let total = self.system.total_memory().pretty_size();
         let used = self.system.used_memory().pretty_size();
         let free = self.system.free_memory().pretty_size();
         let available = self.system.available_memory().pretty_size();
-        let used_percent = self.system.used_memory() as f64 / self.system.total_memory() as f64 * 100.0;
+        let used_percent =
+            self.system.used_memory() as f64 / self.system.total_memory() as f64 * 100.0;
         let used_percent = format!("{:.2}%", used_percent);
 
         if no_color {
-            println!("{} Total: {}, Used: {}, Free: {}, Available: {}, UsedPercent: {}", "Memory", total, used, free, available, used_percent);
+            println!(
+                "{} Total: {}, Used: {}, Free: {}, Available: {}, UsedPercent: {}",
+                "Memory", total, used, free, available, used_percent
+            );
         } else {
-            println!("{} Total: {}, Used: {}, Free: {}, Available: {}, UsedPercent: {}", "Memory".red(), total.blue(), used.cyan(), free.green(), available.yellow(), used_percent.purple());
+            println!(
+                "{} Total: {}, Used: {}, Free: {}, Available: {}, UsedPercent: {}",
+                "Memory".red(),
+                total.blue(),
+                used.cyan(),
+                free.green(),
+                available.yellow(),
+                used_percent.purple()
+            );
         }
 
         println!()
@@ -172,7 +212,8 @@ impl SysInfo {
 
     /// 打印交换分区信息
     pub fn print_swap(&mut self, no_color: bool) {
-        self.system.refresh_memory_specifics(MemoryRefreshKind::new().with_swap());
+        self.system
+            .refresh_memory_specifics(MemoryRefreshKind::new().with_swap());
 
         let total = self.system.total_swap().pretty_size();
         let used = self.system.used_swap().pretty_size();
@@ -181,9 +222,19 @@ impl SysInfo {
         let used_percent = format!("{:.2}%", used_percent);
 
         if no_color {
-            println!("{} Total: {}, Used: {}, Free: {}, UsedPercent: {}", "Swap", total, used, free, used_percent);
+            println!(
+                "{} Total: {}, Used: {}, Free: {}, UsedPercent: {}",
+                "Swap", total, used, free, used_percent
+            );
         } else {
-            println!("{} Total: {}, Used: {}, Free: {}, UsedPercent: {}", "Swap".red(), total.blue(), used.cyan(), free.green(), used_percent.purple());
+            println!(
+                "{} Total: {}, Used: {}, Free: {}, UsedPercent: {}",
+                "Swap".red(),
+                total.blue(),
+                used.cyan(),
+                free.green(),
+                used_percent.purple()
+            );
         }
 
         println!()
@@ -191,6 +242,10 @@ impl SysInfo {
 
     pub fn print_disk(&self, all: bool, sort: bool, total: bool) {
         demo_style();
+        Style::from();
+        "".color();
+        "".red().style();
+        let style = Style::from_iter([Styles::Bold, Styles::Italic, Styles::Strikethrough]);
 
         let columns = vec![
             Column {
@@ -281,8 +336,10 @@ impl SysInfo {
             let mut free_size: u64 = 0;
             let disk_info_result = disk_info(&mount_point);
             match disk_info_result {
-                Ok(res) => { free_size = res.f_bfree * res.f_bsize }
-                Err(err) => { eprintln!("print_disk disk_info error: {}", err.red()) }
+                Ok(res) => free_size = res.f_bfree * res.f_bsize,
+                Err(err) => {
+                    eprintln!("print_disk disk_info error: {}", err.red())
+                }
             }
             let free_space: String = free_size.pretty_size();
 
@@ -316,7 +373,11 @@ impl SysInfo {
         }
 
         if sort {
-            data.sort_by(|a, b| a.get("name").unwrap_or(&"".to_string()).cmp(b.get("name").unwrap_or(&"".to_string())));
+            data.sort_by(|a, b| {
+                a.get("name")
+                    .unwrap_or(&"".to_string())
+                    .cmp(b.get("name").unwrap_or(&"".to_string()))
+            });
         }
 
         if total {
