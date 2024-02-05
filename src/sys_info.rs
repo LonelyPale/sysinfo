@@ -241,8 +241,6 @@ impl SysInfo {
     }
 
     pub fn print_disk(&self, all: bool, sort: String, total: bool) {
-        demo_style();
-
         fn render(args: RenderArgs) -> CombineString {
             let RenderArgs { value, column, record_index, data, custom, .. } = args;
             let mut total = false;
@@ -385,8 +383,7 @@ impl SysInfo {
             let used_space = used_size.pretty_size();
 
             let usage_rate_num = used_size as f64 / disk.total_space() as f64 * 100.;
-            let usage_rate = format!("{usage_rate_num:.2}%", );
-            // let usage_rate = format!("{usage_rate_num:.0}%", );
+            let usage_rate = format!("{usage_rate_num:.2}%");
 
             data.push(HashMap::from([
                 ("name".to_string(), name),
@@ -450,20 +447,20 @@ impl SysInfo {
     }
 }
 
-fn type_of<T>(_: T) -> &'static str {
+fn _type_of<T>(_: T) -> &'static str {
     std::any::type_name::<T>()
 }
 
 #[test]
 fn test_type() {
     let a = 42;
-    println!("a={:?} type={}", a, type_of(a));
+    println!("a={:?} type={}", a, _type_of(a));
 
     let a = "abc";
-    println!("a={:?} type={}", a, type_of(a));
+    println!("a={:?} type={}", a, _type_of(a));
 
     let a = String::from("测试字符串");
-    println!("a={:?} type={}", a, type_of(&a));
+    println!("a={:?} type={}", a, _type_of(&a));
 }
 
 #[test]
@@ -496,7 +493,7 @@ fn test_print_disk() {
     SysInfo::new().print_disk(false, "".to_string(), false);
 }
 
-fn demo_color() {
+fn _demo_color() {
     println!("demo_color:");
     println!("{}", "Black".black());
     println!("{}", "BrightBlack".bright_black());
@@ -518,7 +515,7 @@ fn demo_color() {
     println!();
 }
 
-fn demo_style() {
+fn _demo_style() {
     println!("demo_style:");
     println!("{}", "Clear".clear());
     println!("{}", "Bold".bold());
@@ -532,7 +529,7 @@ fn demo_style() {
     println!();
 }
 
-fn demo_control() {
+fn _demo_control() {
     println!("demo_control:");
     // this will be yellow if your environment allow it
     println!("{}", "some warning-1".yellow());
@@ -556,7 +553,7 @@ fn demo_control() {
 
 #[test]
 fn test_demo() {
-    demo_color();
-    demo_style();
-    demo_control();
+    _demo_color();
+    _demo_style();
+    _demo_control();
 }
