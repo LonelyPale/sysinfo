@@ -422,8 +422,8 @@ impl SysInfo {
                     let val_a = a.get(key).unwrap_or(empty);
                     let val_b = b.get(key).unwrap_or(empty);
                     if key == "total_space" || key == "used_space" || key == "free_space" || key == "available_space" || key == "usage_rate" {
-                        let str_a = val_a.get(..val_a.len()).unwrap_or_default();
-                        let str_b = val_b.get(..val_b.len()).unwrap_or_default();
+                        let str_a = val_a.get(..val_a.len() - 1).unwrap_or_default();
+                        let str_b = val_b.get(..val_b.len() - 1).unwrap_or_default();
                         let f64_a: f64 = str_a.parse().unwrap_or_default();
                         let f64_b: f64 = str_b.parse().unwrap_or_default();
                         f64_a.total_cmp(&f64_b)
