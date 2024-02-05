@@ -243,15 +243,8 @@ impl SysInfo {
     pub fn print_disk(&self, all: bool, sort: String, total: bool) {
         demo_style();
 
-        fn render(
-            RenderArgs {
-                value,
-                column,
-                record_index,
-                data,
-                ..
-            }: RenderArgs,
-        ) -> CombineString {
+        fn render(args: RenderArgs) -> CombineString {
+            let RenderArgs { value, column, record_index, data, .. } = args;
             let last = data.len() - 2;
             if record_index == last {
                 let mut value = match value {
@@ -268,7 +261,7 @@ impl SysInfo {
                     value.fgcolor = column.color;
                 }
 
-                value.style |= Styles::Italic | Styles::Underline;
+                value.style |= Styles::Underline;
 
                 CombineString::AsColoredString(value)
             } else {
@@ -386,7 +379,7 @@ impl SysInfo {
             let used_space = used_size.pretty_size();
 
             let usage_rate_num = used_size as f64 / disk.total_space() as f64 * 100.;
-            let usage_rate = format!("{usage_rate_num:.2}%",);
+            let usage_rate = format!("{usage_rate_num:.2}%", );
             // let usage_rate = format!("{usage_rate_num:.0}%", );
 
             data.push(HashMap::from([
@@ -431,7 +424,7 @@ impl SysInfo {
 
         if total {
             total_usage = total_usage / disks.len() as f64;
-            let total_usage_rate = format!("{total_usage:.2}%",);
+            let total_usage_rate = format!("{total_usage:.2}%", );
             data.push(HashMap::from([
                 ("name".to_string(), "total".to_string()),
                 ("total_space".to_string(), total_total.pretty_size()),
