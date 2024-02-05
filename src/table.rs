@@ -1,4 +1,5 @@
-use colored::{Color, Colorize};
+use crate::table::Args::{AsColoredString, AsStr, AsString};
+use colored::{Color, ColoredString, Colorize, Style, Styles};
 use std::collections::HashMap;
 use std::fmt;
 
@@ -7,7 +8,6 @@ pub struct Table {
     columns: Vec<Column>,
     data: Vec<HashMap<String, String>>,
     columns_cache: HashMap<String, usize>,
-
     // columns_cache: HashMap<String, &'a mut Column>,
     // 1. error: lifetime may not live long enough: self.columns_cache.insert(column.key.clone(), column); argument requires that `'1` must outlive `'a`
     // 2. error[E0502]: cannot borrow `table` as immutable because it is also borrowed as mutable
@@ -78,11 +78,11 @@ impl Table {
                 }
 
                 if index == 0 {
-                    write!(f, "{}", column.format(text))?;
+                    write!(f, "{}", column.format(AsStr(text)))?;
                 } else if index == last {
-                    write!(f, "  {}\n", column.format(text))?;
+                    write!(f, "  {}\n", column.format(AsStr(text)))?;
                 } else {
-                    write!(f, "  {}", column.format(text))?;
+                    write!(f, "  {}", column.format(AsStr(text)))?;
                 }
             }
         }
@@ -116,19 +116,56 @@ pub struct Column {
     pub hidden: bool,
     pub right_align: bool,
     pub color: Option<Color>,
+    pub style: Style,
+    pub render: Option<fn() -> String>,
+}
+
+pub enum Args<'a> {
+    AsStr(&'a str),
+    AsString(String),
+    AsColoredString(ColoredString),
 }
 
 impl Column {
-    fn format<S: AsRef<str>>(&self, value: S) -> String {
-        let value: &str = value.as_ref();
+    fn format(&self, value: Args) -> String {
+        // fn format<S: AsRef<str>>(&self, value: S) -> String {}
+        // let value: &str = value.as_ref();
+
         if self.hidden {
             String::new()
+        } else if let Some(render) = self.render {
+            render()
         } else {
-            //处理颜色
-            let output = match self.color {
-                Some(item) => value.color(item),
-                None => value.normal(),
+            let mut value = match value {
+                AsStr(arg) => arg.normal(),
+                AsString(arg) => arg.normal(),
+                AsColoredString(arg) => arg,
             };
+
+            //处理颜色
+            let mut output = match self.color {
+                Some(item) => {
+                    value.fgcolor = Some(item);
+                    value
+                }
+                None => value,
+            };
+
+            //处理样式
+            output.style = output.style | self.style;
+
+            //render
+            //function(text, record, index) {}
+            //生成复杂数据的渲染函数，参数分别为当前行的值，当前行数据，行索引
+            // if value == "Device" || value == "Type" || value == "MountPoint" {
+            //     output.style = self.style;
+            // }
+            // let Some(a) = match value {
+            //
+            //     &_ => {}
+            // };
+            // rust中如何让泛型函数参数是特征A或特征B
+            // fn format<S: A>(&self, value: S) -> String {}
 
             //处理对齐
             let width = self.width;
@@ -150,13 +187,18 @@ impl Default for Column {
             hidden: false,
             right_align: false,
             color: None,
+            style: Style::default(),
+            render: None,
         }
     }
 }
 
 impl fmt::Display for Column {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.format(&self.title))
+        let mut text = self.title.normal();
+        text.style = Styles::Bold | Styles::Underline;
+        write!(f, "{}", self.format(AsColoredString(text)))
+        // write!(f, "{}", self.format(&self.title))
     }
 }
 
@@ -190,11 +232,15 @@ fn test_hash_map() {
 
 #[test]
 fn test_column() {
-    let column = Column { ..Column::default() };
-    println!("{}", column.format("aaa"));
+    let column = Column {
+        ..Column::default()
+    };
+    println!("{}", column.format(AsStr("aaa")));
 
-    let column_ref = &Column { ..Column::default() };
-    println!("{}", column_ref.format(&"bbb".to_string()));
+    let column_ref = &Column {
+        ..Column::default()
+    };
+    println!("{}", column_ref.format(AsString("bbb".to_string())));
 }
 
 #[test]
@@ -226,15 +272,9 @@ fn test_table() {
                 ("bbb".to_string(), "1-2-222".to_string()),
                 ("ccc".to_string(), "1-3-333-333".to_string()),
             ]),
-            HashMap::from([
-                ("aaa".to_string(), "-1".to_string()),
-            ]),
-            HashMap::from([
-                ("bbb".to_string(), "-2".to_string()),
-            ]),
-            HashMap::from([
-                ("ccc".to_string(), "-3".to_string()),
-            ]),
+            HashMap::from([("aaa".to_string(), "-1".to_string())]),
+            HashMap::from([("bbb".to_string(), "-2".to_string())]),
+            HashMap::from([("ccc".to_string(), "-3".to_string())]),
             HashMap::from([
                 ("aaa".to_string(), "2-1".to_string()),
                 ("bbb".to_string(), "2-2".to_string()),
@@ -286,7 +326,9 @@ impl Tab {
         t.r();
         t
     }
-    fn r(&mut self) { self.name = 111 }
+    fn r(&mut self) {
+        self.name = 111
+    }
 }
 
 #[test]
