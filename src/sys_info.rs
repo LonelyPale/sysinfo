@@ -83,7 +83,7 @@ impl SysInfo {
         self.print_cpu(no_color);
         self.print_memory(no_color);
         self.print_swap(no_color);
-        self.print_disk(no_color, true, true);
+        self.print_disk(no_color, "".to_string(), true);
 
         // Components temperature:
         let components = Components::new_with_refreshed_list();
@@ -240,7 +240,7 @@ impl SysInfo {
         println!()
     }
 
-    pub fn print_disk(&self, all: bool, sort: bool, total: bool) {
+    pub fn print_disk(&self, all: bool, sort: String, total: bool) {
         demo_style();
 
         let columns = vec![
@@ -368,12 +368,22 @@ impl SysInfo {
             }
         }
 
-        if sort {
-            data.sort_by(|a, b| {
-                a.get("name")
-                    .unwrap_or(&"".to_string())
-                    .cmp(b.get("name").unwrap_or(&"".to_string()))
-            });
+        if sort.len() > 0 {
+            let mut key = "";
+            for col in &columns {
+                if sort == col.title {
+                    key = &col.key;
+                    break;
+                }
+            }
+
+            if key.len() > 0 {
+                data.sort_by(|a, b| {
+                    a.get(key)
+                        .unwrap_or(&"".to_string())
+                        .cmp(b.get(key).unwrap_or(&"".to_string()))
+                });
+            }
         }
 
         if total {
@@ -438,7 +448,7 @@ fn test_print_swap() {
 
 #[test]
 fn test_print_disk() {
-    SysInfo::new().print_disk(false, false, false);
+    SysInfo::new().print_disk(false, "".to_string(), false);
 }
 
 fn demo_color() {

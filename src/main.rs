@@ -13,9 +13,9 @@ use sys_info::SysInfo;
 #[command(version = "0.1.0", long_version = "0.1.0.888")]
 #[command(about = "Display system information CLI", long_about = None)]
 #[command(disable_version_flag = true)] //禁用version
-// #[command(disable_help_flag = true)] //禁用help
-// #[command(next_line_help = true)] //一条记录分两行显示
-// #[command(ignore_errors = true)] //忽略error
+                                        // #[command(disable_help_flag = true)] //禁用help
+                                        // #[command(next_line_help = true)] //一条记录分两行显示
+                                        // #[command(ignore_errors = true)] //忽略error
 struct Cli {
     #[command(subcommand)]
     command: Option<Commands>, //Option使子命令不是必须的
@@ -52,8 +52,8 @@ enum Commands {
         all: bool,
 
         /// Print by sort
-        #[arg(short, long)]
-        sort: bool,
+        #[arg(short, long, value_name = "TITLE", default_value_t = String::from(""))]
+        sort: String,
 
         /// Generate total value
         #[arg(short, long)]
@@ -87,7 +87,7 @@ fn main() {
         None => {
             SysInfo::new_all().print_all(args.no_color);
         } // _ => {
-        //     println!("testing...");
-        // }
+          //     println!("testing...");
+          // }
     }
 }
