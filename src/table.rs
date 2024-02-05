@@ -6,8 +6,10 @@ use std::fmt;
 //标准版本：已完成
 pub struct Table {
     columns: Vec<Column>,
-    data: Vec<HashMap<String, String>>,
     columns_cache: HashMap<String, usize>,
+    data: Vec<HashMap<String, String>>,
+    custom: HashMap<String, String>,
+
     // columns_cache: HashMap<String, &'a mut Column>,
     // 1. error: lifetime may not live long enough: self.columns_cache.insert(column.key.clone(), column); argument requires that `'1` must outlive `'a`
     // 2. error[E0502]: cannot borrow `table` as immutable because it is also borrowed as mutable
@@ -22,10 +24,11 @@ pub struct Table {
 }
 
 impl Table {
-    pub fn new(columns: Vec<Column>, data: Vec<HashMap<String, String>>) -> Self {
+    pub fn new(columns: Vec<Column>, data: Vec<HashMap<String, String>>, custom: HashMap<String, String>) -> Self {
         let mut table = Self {
             columns,
             data,
+            custom,
             ..Self::default()
         };
         table.refresh_cache();
@@ -86,6 +89,7 @@ impl Table {
                     record_index,
                     record,
                     data: &self.data,
+                    custom: &self.custom,
                 };
 
                 if column_index == 0 {
@@ -105,8 +109,9 @@ impl Default for Table {
     fn default() -> Self {
         Self {
             columns: Vec::new(),
-            data: Vec::new(),
             columns_cache: HashMap::new(),
+            data: Vec::new(),
+            custom: HashMap::new(),
         }
     }
 }
@@ -129,7 +134,10 @@ pub struct Column {
     pub color: Option<Color>,
     pub style: Style,
     pub render: Option<Render>,
-    // pub render: Option<fn(args: RenderArgs) -> CombineString<'a>>,
+    // pub render: Option<fn(args: RenderArgs) -> CombineString<'a>>, //使用别名类型Render可以不用定义生命周期<'a>
+    // fn render(args: RenderArgs) -> CombineString {} //使用函数变量fn不能捕获外部变量，但闭包可以。
+    // 函数变量是具体的类型，但闭包不是，每个闭包都是一个单独的类型，即时一模一样的两个闭包也是两个完全不同的类型，所以闭包只能用特征约束。
+    // 但此处如果使用闭包，会有泛型约束循环依赖的问题，Column依赖Render，Render依赖RenderArgs，RenderArgs依赖Column。
 }
 
 type Render = fn(args: RenderArgs) -> CombineString;
@@ -143,6 +151,7 @@ pub struct RenderArgs<'a> {
     pub record_index: usize,
     pub record: &'a HashMap<String, String>,
     pub data: &'a Vec<HashMap<String, String>>,
+    pub custom: &'a HashMap<String, String>,
 }
 
 pub enum CombineString<'a> {

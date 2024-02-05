@@ -244,9 +244,15 @@ impl SysInfo {
         demo_style();
 
         fn render(args: RenderArgs) -> CombineString {
-            let RenderArgs { value, column, record_index, data, .. } = args;
-            let last = data.len() - 2;
-            if record_index == last {
+            let RenderArgs { value, column, record_index, data, custom, .. } = args;
+            let mut total = false;
+            if let Some(val) = custom.get("total") {
+                if val == "true" {
+                    total = true;
+                }
+            }
+            let last = data.len() - 1;
+            if total && record_index == last {
                 let mut value = match value {
                     CombineString::AsStr(val) => val.normal(),
                     CombineString::AsString(val) => val.normal(),
@@ -261,7 +267,7 @@ impl SysInfo {
                     value.fgcolor = column.color;
                 }
 
-                value.style |= Styles::Underline;
+                value.style |= Styles::Dimmed | Styles::Italic;
 
                 CombineString::AsColoredString(value)
             } else {
@@ -435,7 +441,10 @@ impl SysInfo {
             ]));
         }
 
-        let table = Table::new(columns, data);
+        let custom = HashMap::from([
+            ("total".to_string(), total.to_string()),
+        ]);
+        let table = Table::new(columns, data, custom);
         println!("{}", table);
         println!();
     }
