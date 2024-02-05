@@ -1,4 +1,4 @@
-use crate::table::Args::{AsColoredString, AsStr, AsString};
+use crate::table::CombineString::{AsColoredString, AsStr, AsString};
 use colored::{Color, ColoredString, Colorize, Style, Styles};
 use std::collections::HashMap;
 use std::fmt;
@@ -69,20 +69,31 @@ impl Table {
     }
 
     fn fmt_row(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let last = self.columns.len() - 1;
-        for row in &self.data {
-            for (index, column) in self.columns.iter().enumerate() {
+        let column_last = self.columns.len() - 1;
+        for (record_index, record) in self.data.iter().enumerate() {
+            for (column_index, column) in self.columns.iter().enumerate() {
                 let mut text = "";
-                if let Some(value) = row.get(&column.key) {
+                if let Some(value) = record.get(&column.key) {
                     text = value;
                 }
 
-                if index == 0 {
-                    write!(f, "{}", column.format(AsStr(text)))?;
-                } else if index == last {
-                    write!(f, "  {}\n", column.format(AsStr(text)))?;
+                let args = RenderArgs {
+                    value: AsStr(text),
+                    key: &column.key,
+                    column_index,
+                    column,
+                    columns: &self.columns,
+                    record_index,
+                    record,
+                    data: &self.data,
+                };
+
+                if column_index == 0 {
+                    write!(f, "{}", column.format(AsStr(text), Some(args)))?;
+                } else if column_index == column_last {
+                    write!(f, "  {}\n", column.format(AsStr(text), Some(args)))?;
                 } else {
-                    write!(f, "  {}", column.format(AsStr(text)))?;
+                    write!(f, "  {}", column.format(AsStr(text), Some(args)))?;
                 }
             }
         }
@@ -117,55 +128,68 @@ pub struct Column {
     pub right_align: bool,
     pub color: Option<Color>,
     pub style: Style,
-    pub render: Option<fn() -> String>,
+    pub render: Option<Render>,
+    // pub render: Option<fn(args: RenderArgs) -> CombineString<'a>>,
 }
 
-pub enum Args<'a> {
+type Render = fn(args: RenderArgs) -> CombineString;
+
+pub struct RenderArgs<'a> {
+    pub value: CombineString<'a>,
+    pub key: &'a str,
+    pub column_index: usize,
+    pub column: &'a Column,
+    pub columns: &'a Vec<Column>,
+    pub record_index: usize,
+    pub record: &'a HashMap<String, String>,
+    pub data: &'a Vec<HashMap<String, String>>,
+}
+
+pub enum CombineString<'a> {
     AsStr(&'a str),
     AsString(String),
     AsColoredString(ColoredString),
 }
 
 impl Column {
-    fn format(&self, value: Args) -> String {
+    fn format(&self, value: CombineString, args: Option<RenderArgs>) -> String {
         // fn format<S: AsRef<str>>(&self, value: S) -> String {}
         // let value: &str = value.as_ref();
 
         if self.hidden {
             String::new()
-        } else if let Some(render) = self.render {
-            render()
         } else {
-            let mut value = match value {
-                AsStr(arg) => arg.normal(),
-                AsString(arg) => arg.normal(),
-                AsColoredString(arg) => arg,
-            };
-
-            //处理颜色
-            let mut output = match self.color {
-                Some(item) => {
-                    value.fgcolor = Some(item);
-                    value
-                }
+            let value = match self.render {
                 None => value,
+                Some(render) => match args {
+                    None => value,
+                    Some(args) => render(args),
+                },
             };
 
-            //处理样式
-            output.style = output.style | self.style;
-
-            //render
-            //function(text, record, index) {}
-            //生成复杂数据的渲染函数，参数分别为当前行的值，当前行数据，行索引
-            // if value == "Device" || value == "Type" || value == "MountPoint" {
-            //     output.style = self.style;
-            // }
-            // let Some(a) = match value {
-            //
-            //     &_ => {}
-            // };
-            // rust中如何让泛型函数参数是特征A或特征B
-            // fn format<S: A>(&self, value: S) -> String {}
+            let output = match value {
+                AsStr(val) => {
+                    let mut val = val.normal();
+                    //处理颜色
+                    if let Some(c) = self.color {
+                        val.fgcolor = Some(c);
+                    }
+                    //处理样式
+                    val.style = self.style;
+                    val
+                }
+                AsString(val) => {
+                    let mut val = val.normal();
+                    //处理颜色
+                    if let Some(c) = self.color {
+                        val.fgcolor = Some(c);
+                    }
+                    //处理样式
+                    val.style = self.style;
+                    val
+                }
+                AsColoredString(val) => val,
+            };
 
             //处理对齐
             let width = self.width;
@@ -196,16 +220,17 @@ impl Default for Column {
 impl fmt::Display for Column {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut text = self.title.normal();
+        text.fgcolor = self.color;
         text.style = Styles::Bold | Styles::Underline;
-        write!(f, "{}", self.format(AsColoredString(text)))
+        write!(f, "{}", self.format(AsColoredString(text), None))
         // write!(f, "{}", self.format(&self.title))
     }
 }
 
 #[test]
 fn test() {
-    // std::fmt::Display::fmt();
     // std::fmt::format();
+    // std::fmt::Display::fmt();
 
     let s1 = "abc";
     let s2 = s1;
@@ -235,12 +260,12 @@ fn test_column() {
     let column = Column {
         ..Column::default()
     };
-    println!("{}", column.format(AsStr("aaa")));
+    println!("{}", column.format(AsStr("aaa"), None));
 
     let column_ref = &Column {
         ..Column::default()
     };
-    println!("{}", column_ref.format(AsString("bbb".to_string())));
+    println!("{}", column_ref.format(AsString("bbb".to_string()), None));
 }
 
 #[test]

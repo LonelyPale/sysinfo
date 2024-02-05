@@ -4,7 +4,7 @@ use sysinfo::{Components, CpuRefreshKind, Disks, MemoryRefreshKind, RefreshKind,
 
 use crate::common::PrettySize;
 use crate::disk::disk_info;
-use crate::table::{Column, Table};
+use crate::table::{Column, CombineString, RenderArgs, Table};
 
 #[derive(Debug)]
 pub struct SysInfo {
@@ -243,23 +243,59 @@ impl SysInfo {
     pub fn print_disk(&self, all: bool, sort: String, total: bool) {
         demo_style();
 
+        fn render(
+            RenderArgs {
+                value,
+                column,
+                record_index,
+                data,
+                ..
+            }: RenderArgs,
+        ) -> CombineString {
+            let last = data.len() - 2;
+            if record_index == last {
+                let mut value = match value {
+                    CombineString::AsStr(val) => val.normal(),
+                    CombineString::AsString(val) => val.normal(),
+                    CombineString::AsColoredString(val) => val,
+                };
+
+                if value.is_empty() {
+                    return CombineString::AsColoredString(value);
+                }
+
+                if value.fgcolor.is_none() {
+                    value.fgcolor = column.color;
+                }
+
+                value.style |= Styles::Italic | Styles::Underline;
+
+                CombineString::AsColoredString(value)
+            } else {
+                value
+            }
+        }
+
         let columns = vec![
             Column {
                 title: "Device".to_string(),
                 key: "name".to_string(),
                 color: Some(Color::Red),
+                render: Some(render),
                 ..Column::default()
             },
             Column {
                 title: "Type".to_string(),
                 key: "file_system".to_string(),
                 color: Some(Color::Green),
+                render: Some(render),
                 ..Column::default()
             },
             Column {
                 title: "Kind".to_string(),
                 key: "kind".to_string(),
                 color: Some(Color::Yellow),
+                render: Some(render),
                 ..Column::default()
             },
             Column {
@@ -267,6 +303,7 @@ impl SysInfo {
                 key: "total_space".to_string(),
                 right_align: true,
                 color: Some(Color::Blue),
+                render: Some(render),
                 ..Column::default()
             },
             Column {
@@ -274,6 +311,7 @@ impl SysInfo {
                 key: "used_space".to_string(),
                 right_align: true,
                 color: Some(Color::Magenta),
+                render: Some(render),
                 ..Column::default()
             },
             Column {
@@ -281,6 +319,7 @@ impl SysInfo {
                 key: "free_space".to_string(),
                 right_align: true,
                 color: Some(Color::Cyan),
+                render: Some(render),
                 ..Column::default()
             },
             Column {
@@ -289,6 +328,7 @@ impl SysInfo {
                 hidden: !all,
                 right_align: true,
                 color: Some(Color::BrightRed),
+                render: Some(render),
                 ..Column::default()
             },
             Column {
@@ -296,12 +336,14 @@ impl SysInfo {
                 key: "usage_rate".to_string(),
                 right_align: true,
                 color: Some(Color::BrightGreen),
+                render: Some(render),
                 ..Column::default()
             },
             Column {
                 title: "MountPoint".to_string(),
                 key: "mount_point".to_string(),
                 color: Some(Color::BrightYellow),
+                render: Some(render),
                 ..Column::default()
             },
             Column {
@@ -309,6 +351,7 @@ impl SysInfo {
                 key: "is_removable".to_string(),
                 color: Some(Color::BrightBlue),
                 hidden: !all,
+                render: Some(render),
                 ..Column::default()
             },
         ];

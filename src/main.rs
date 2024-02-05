@@ -52,6 +52,7 @@ enum Commands {
         all: bool,
 
         /// Print by sort
+        /// [Device | Type | Kind | Total | Used | Free | Avail | Use% | MountPoint | Removable]
         #[arg(short, long, value_name = "TITLE", default_value_t = String::from(""))]
         sort: String,
 
