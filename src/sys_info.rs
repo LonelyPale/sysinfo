@@ -420,8 +420,13 @@ impl SysInfo {
                 }
             }
 
+            let last = key.len() - "_space".len();
             if key.len() > 0 {
                 data.sort_by(|a, b| {
+                    let mut key = key;
+                    if key.ends_with("_space") {
+                        key = &key[..last]
+                    }
                     let empty = &"".to_string();
                     let val_a = a.get(key).unwrap_or(empty);
                     let val_b = b.get(key).unwrap_or(empty);
