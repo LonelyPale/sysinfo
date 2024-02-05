@@ -267,7 +267,7 @@ impl SysInfo {
                     value.fgcolor = column.color;
                 }
 
-                value.style |= Styles::Bold;
+                value.style |= Styles::Bold | Styles::Underline;
 
                 CombineString::AsColoredString(value)
             } else {
