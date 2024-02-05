@@ -390,9 +390,13 @@ impl SysInfo {
                 ("file_system".to_string(), file_system),
                 ("kind".to_string(), kind),
                 ("total_space".to_string(), total_space),
+                ("total".to_string(), disk.total_space().to_string()), //额外增加，排序用
                 ("used_space".to_string(), used_space),
+                ("used".to_string(), used_size.to_string()), //额外增加，排序用
                 ("free_space".to_string(), free_space),
+                ("free".to_string(), free_size.to_string()), //额外增加，排序用
                 ("available_space".to_string(), available_space),
+                ("available".to_string(), disk.available_space().to_string()), //额外增加，排序用
                 ("usage_rate".to_string(), usage_rate),
                 ("mount_point".to_string(), mount_point),
                 ("is_removable".to_string(), is_removable),
@@ -421,7 +425,11 @@ impl SysInfo {
                     let empty = &"".to_string();
                     let val_a = a.get(key).unwrap_or(empty);
                     let val_b = b.get(key).unwrap_or(empty);
-                    if key == "total_space" || key == "used_space" || key == "free_space" || key == "available_space" || key == "usage_rate" {
+                    if key == "total" || key == "used" || key == "free" || key == "available" {
+                        let u64_a: u64 = val_a.parse().unwrap_or_default();
+                        let u64_b: u64 = val_b.parse().unwrap_or_default();
+                        u64_a.cmp(&u64_b)
+                    } else if key == "usage_rate" {
                         let str_a = val_a.get(..val_a.len() - 1).unwrap_or_default();
                         let str_b = val_b.get(..val_b.len() - 1).unwrap_or_default();
                         let f64_a: f64 = str_a.parse().unwrap_or_default();
