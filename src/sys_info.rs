@@ -1,4 +1,4 @@
-use colored::{Color, Colorize, Style, Styles};
+use colored::{Color, Colorize, Styles};
 use std::collections::HashMap;
 use sysinfo::{Components, CpuRefreshKind, Disks, MemoryRefreshKind, RefreshKind, System};
 
@@ -241,6 +241,7 @@ impl SysInfo {
     }
 
     pub fn print_disk(&self, all: bool, sort: String, total: bool) {
+        // let render = |args: RenderArgs| -> CombineString {//closure-error: 无法解决
         fn render(args: RenderArgs) -> CombineString {
             let RenderArgs { value, column, record_index, data, custom, .. } = args;
             let mut total = false;
