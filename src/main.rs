@@ -37,7 +37,11 @@ enum Commands {
     System {},
 
     /// Print cpu info
-    Cpu {},
+    Cpu {
+        /// Print cpu details
+        #[arg(short, long)]
+        details: bool,
+    },
 
     /// Print memory and swap info
     Memory {},
@@ -70,8 +74,8 @@ fn main() {
         Some(Commands::System {}) => {
             SysInfo::new().print_system(args.no_color);
         }
-        Some(Commands::Cpu {}) => {
-            SysInfo::new_cpu().print_cpu(args.no_color);
+        Some(Commands::Cpu { details }) => {
+            SysInfo::new_cpu().print_cpu(details);
         }
         Some(Commands::Memory {}) => {
             SysInfo::new_memory().print_memory();
