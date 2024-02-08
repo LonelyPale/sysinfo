@@ -1,6 +1,6 @@
 use colored::{Color, Colorize, Style, Styles};
 use std::collections::HashMap;
-use sysinfo::{Components, CpuRefreshKind, Disks, MemoryRefreshKind, RefreshKind, System};
+use sysinfo::{CpuRefreshKind, Disks, MemoryRefreshKind, RefreshKind, System};
 
 use crate::common::PrettySize;
 use crate::disk::disk_info;
@@ -83,24 +83,24 @@ impl SysInfo {
         self.print_disk(true, "MountPoint".to_string(), true);
 
         // Components temperature:
-        let components = Components::new_with_refreshed_list();
-        println!("=> components:");
-        for component in &components {
-            println!("{component:?}");
-        }
+        // let components = sysinfo::Components::new_with_refreshed_list();
+        // println!("=> components:");
+        // for component in &components {
+        //     println!("{component:?}");
+        // }
     }
 
     /// 打印系统信息 Display system information
     pub fn print_system(&self) {
-        let name = System::name().unwrap_or_default();
-        let kernel_version = System::kernel_version().unwrap_or_default();
+        let os_name = System::name().unwrap_or_default();
         let os_version = System::os_version().unwrap_or_default();
+        let kernel_version = System::kernel_version().unwrap_or_default();
         let host_name = System::host_name().unwrap_or_default();
 
         let width = 15;
-        println!("{:width$} {}", "Kernel:".color(Color::Red), name.color(Color::Green));
-        println!("{:width$} {}", "Kernel version:".color(Color::Red), kernel_version.color(Color::Yellow));
-        println!("{:width$} {}", "OS version:".color(Color::Red), os_version.color(Color::Blue));
+        println!("{:width$} {}", "OS Name:".color(Color::Red), os_name.color(Color::Green));
+        println!("{:width$} {}", "OS Version:".color(Color::Red), os_version.color(Color::Blue));
+        println!("{:width$} {}", "Kernel Version:".color(Color::Red), kernel_version.color(Color::Yellow));
         println!("{:width$} {}", "Hostname:".color(Color::Red), host_name.color(Color::Magenta));
     }
 
@@ -216,6 +216,7 @@ impl SysInfo {
             }
 
             let table_details = Table::new(columns_details, data_details, HashMap::new());
+            println!();
             println!();
             println!("{}", table_details);
         }
