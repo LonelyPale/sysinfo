@@ -72,7 +72,7 @@ fn main() {
 
     match args.command {
         Some(Commands::System {}) => {
-            SysInfo::new().print_system(args.no_color);
+            SysInfo::new().print_system();
         }
         Some(Commands::Cpu { details }) => {
             SysInfo::new_cpu().print_cpu(details);

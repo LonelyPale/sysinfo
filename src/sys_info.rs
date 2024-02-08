@@ -71,7 +71,7 @@ impl SysInfo {
 
     /// 打印全部信息
     pub fn print_all(&mut self) {
-        self.print_system(true);
+        self.print_system();
         self.print_cpu(true);
         self.print_memory();
         self.print_disk(true, "MountPoint".to_string(), true);
@@ -85,28 +85,17 @@ impl SysInfo {
     }
 
     /// 打印系统信息 Display system information
-    pub fn print_system(&self, no_color: bool) {
+    pub fn print_system(&self) {
         let name = System::name().unwrap_or_default();
         let kernel_version = System::kernel_version().unwrap_or_default();
         let os_version = System::os_version().unwrap_or_default();
         let host_name = System::host_name().unwrap_or_default();
 
-        if no_color {
-            println!("{} NAME:           {}", "System", name);
-            println!("{} kernel version: {}", "System", kernel_version);
-            println!("{} OS version:     {}", "System", os_version);
-            println!("{} host NAME:      {}", "System", host_name);
-        } else {
-            println!("{} NAME:           {}", "System".red(), name.blue());
-            println!(
-                "{} kernel version: {}",
-                "System".red(),
-                kernel_version.cyan()
-            );
-            println!("{} OS version:     {}", "System".red(), os_version.green());
-            println!("{} host NAME:      {}", "System".red(), host_name.purple());
-        }
-
+        let width = 15;
+        println!("{:width$} {}", "Kernel:".color(Color::Red), name.color(Color::Green));
+        println!("{:width$} {}", "Kernel version:".color(Color::Red), kernel_version.color(Color::Yellow));
+        println!("{:width$} {}", "OS version:".color(Color::Red), os_version.color(Color::Blue));
+        println!("{:width$} {}", "Hostname:".color(Color::Red), host_name.color(Color::Magenta));
         println!()
     }
 
@@ -223,7 +212,6 @@ impl SysInfo {
 
             let table_details = Table::new(columns_details, data_details, HashMap::new());
             println!("{}", table_details);
-            println!();
         }
     }
 
@@ -317,7 +305,6 @@ impl SysInfo {
 
         let table = Table::new(columns, data, HashMap::new());
         println!("{}", table);
-        println!();
     }
 
     pub fn print_disk(&self, all: bool, sort: String, total: bool) {
@@ -546,7 +533,6 @@ impl SysInfo {
         ]);
         let table = Table::new(columns, data, custom);
         println!("{}", table);
-        println!();
     }
 }
 
@@ -573,7 +559,7 @@ fn test_print_all() {
 
 #[test]
 fn test_print_system() {
-    SysInfo::new().print_system(false);
+    SysInfo::new().print_system();
 }
 
 #[test]
