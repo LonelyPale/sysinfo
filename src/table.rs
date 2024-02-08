@@ -233,6 +233,10 @@ impl Default for Column {
 
 impl fmt::Display for Column {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if self.title.len() == 0 {
+            return write!(f, "{}", self.format(AsStr(&self.title), None));
+        }
+
         let mut text = self.title.normal();
         text.fgcolor = self.color;
         text.style = Styles::Bold | Styles::Underline;

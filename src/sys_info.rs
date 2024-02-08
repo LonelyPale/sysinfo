@@ -1,4 +1,4 @@
-use colored::{Color, Colorize, Styles};
+use colored::{Color, Colorize, Style, Styles};
 use std::collections::HashMap;
 use sysinfo::{Components, CpuRefreshKind, Disks, MemoryRefreshKind, RefreshKind, System};
 
@@ -81,8 +81,7 @@ impl SysInfo {
     pub fn print_all(&mut self, no_color: bool) {
         self.print_system(no_color);
         self.print_cpu(no_color);
-        self.print_memory(no_color);
-        self.print_swap(no_color);
+        self.print_memory();
         self.print_disk(no_color, "".to_string(), true);
 
         // Components temperature:
@@ -174,46 +173,78 @@ impl SysInfo {
         println!()
     }
 
-    /// 打印内存信息
-    pub fn print_memory(&mut self, no_color: bool) {
+    /// 打印内存、交换分区信息
+    pub fn print_memory(&mut self) {
+        let columns = vec![
+            Column {
+                title: "".to_string(),
+                key: "title".to_string(),
+                color: Some(Color::Red),
+                style: Style::default() | Styles::Bold,
+                ..Column::default()
+            },
+            Column {
+                title: "Total".to_string(),
+                key: "total".to_string(),
+                right_align: true,
+                color: Some(Color::Green),
+                ..Column::default()
+            },
+            Column {
+                title: "Used".to_string(),
+                key: "used".to_string(),
+                right_align: true,
+                color: Some(Color::Yellow),
+                ..Column::default()
+            },
+            Column {
+                title: "Free".to_string(),
+                key: "free".to_string(),
+                right_align: true,
+                color: Some(Color::Blue),
+                ..Column::default()
+            },
+            Column {
+                title: "Avail".to_string(),
+                key: "available".to_string(),
+                right_align: true,
+                color: Some(Color::Magenta),
+                ..Column::default()
+            },
+            Column {
+                title: "Use%".to_string(),
+                key: "used_percent".to_string(),
+                right_align: true,
+                color: Some(Color::Cyan),
+                ..Column::default()
+            },
+        ];
+
+        // memory
         // 通常，“FREE 空闲”内存是指未分配的内存，而“AVAILABLE 可用”内存是指可供（重新）使用的内存。
         // ⚠️ Windows 和 FreeBSD 不报告“可用”内存，因此 free_memory 与 available_memory 的值相同。
 
-        self.system
-            .refresh_memory_specifics(MemoryRefreshKind::new().with_ram());
+        self.system.refresh_memory_specifics(MemoryRefreshKind::new().with_ram());
 
         let total = self.system.total_memory().pretty_size();
         let used = self.system.used_memory().pretty_size();
         let free = self.system.free_memory().pretty_size();
         let available = self.system.available_memory().pretty_size();
-        let used_percent =
-            self.system.used_memory() as f64 / self.system.total_memory() as f64 * 100.0;
+        let used_percent = self.system.used_memory() as f64 / self.system.total_memory() as f64 * 100.0;
         let used_percent = format!("{:.2}%", used_percent);
 
-        if no_color {
-            println!(
-                "{} Total: {}, Used: {}, Free: {}, Available: {}, UsedPercent: {}",
-                "Memory", total, used, free, available, used_percent
-            );
-        } else {
-            println!(
-                "{} Total: {}, Used: {}, Free: {}, Available: {}, UsedPercent: {}",
-                "Memory".red(),
-                total.blue(),
-                used.cyan(),
-                free.green(),
-                available.yellow(),
-                used_percent.purple()
-            );
-        }
+        let mut data = Vec::new();
+        data.push(HashMap::from([
+            ("title".to_string(), "Memory:".to_string()),
+            ("total".to_string(), total),
+            ("used".to_string(), used),
+            ("free".to_string(), free),
+            ("available".to_string(), available),
+            ("used_percent".to_string(), used_percent),
+        ]));
 
-        println!()
-    }
-
-    /// 打印交换分区信息
-    pub fn print_swap(&mut self, no_color: bool) {
-        self.system
-            .refresh_memory_specifics(MemoryRefreshKind::new().with_swap());
+        // swap
+        self.system.refresh_memory_specifics(MemoryRefreshKind::new().with_swap());
 
         let total = self.system.total_swap().pretty_size();
         let used = self.system.used_swap().pretty_size();
@@ -221,23 +252,18 @@ impl SysInfo {
         let used_percent = self.system.used_swap() as f64 / self.system.total_swap() as f64 * 100.0;
         let used_percent = format!("{:.2}%", used_percent);
 
-        if no_color {
-            println!(
-                "{} Total: {}, Used: {}, Free: {}, UsedPercent: {}",
-                "Swap", total, used, free, used_percent
-            );
-        } else {
-            println!(
-                "{} Total: {}, Used: {}, Free: {}, UsedPercent: {}",
-                "Swap".red(),
-                total.blue(),
-                used.cyan(),
-                free.green(),
-                used_percent.purple()
-            );
-        }
+        data.push(HashMap::from([
+            ("title".to_string(), "Swap:".to_string()),
+            ("total".to_string(), total),
+            ("used".to_string(), used),
+            ("free".to_string(), free),
+            ("available".to_string(), "".to_string()),
+            ("used_percent".to_string(), used_percent),
+        ]));
 
-        println!()
+        let table = Table::new(columns, data, HashMap::new());
+        println!("{}", table);
+        println!();
     }
 
     pub fn print_disk(&self, all: bool, sort: String, total: bool) {
@@ -503,12 +529,7 @@ fn test_print_cpu() {
 
 #[test]
 fn test_print_memory() {
-    SysInfo::new_memory().print_memory(false);
-}
-
-#[test]
-fn test_print_swap() {
-    SysInfo::new_swap().print_swap(false);
+    SysInfo::new_memory().print_memory();
 }
 
 #[test]

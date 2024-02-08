@@ -13,9 +13,9 @@ use sys_info::SysInfo;
 #[command(version = "0.1.0", long_version = "0.1.0.888")]
 #[command(about = "Display system information CLI", long_about = None)]
 #[command(disable_version_flag = true)] //禁用version
-                                        // #[command(disable_help_flag = true)] //禁用help
-                                        // #[command(next_line_help = true)] //一条记录分两行显示
-                                        // #[command(ignore_errors = true)] //忽略error
+// #[command(disable_help_flag = true)] //禁用help
+// #[command(next_line_help = true)] //一条记录分两行显示
+// #[command(ignore_errors = true)] //忽略error
 struct Cli {
     #[command(subcommand)]
     command: Option<Commands>, //Option使子命令不是必须的
@@ -39,11 +39,8 @@ enum Commands {
     /// Print cpu info
     Cpu {},
 
-    /// Print memory info
+    /// Print memory and swap info
     Memory {},
-
-    /// Print swap info
-    Swap {},
 
     /// Print disk info
     Disk {
@@ -77,10 +74,7 @@ fn main() {
             SysInfo::new_cpu().print_cpu(args.no_color);
         }
         Some(Commands::Memory {}) => {
-            SysInfo::new_memory().print_memory(args.no_color);
-        }
-        Some(Commands::Swap {}) => {
-            SysInfo::new_swap().print_swap(args.no_color);
+            SysInfo::new_memory().print_memory();
         }
         Some(Commands::Disk { all, sort, total }) => {
             SysInfo::new().print_disk(all, sort, total);
@@ -88,7 +82,7 @@ fn main() {
         None => {
             SysInfo::new_all().print_all(args.no_color);
         } // _ => {
-          //     println!("testing...");
-          // }
+        //     println!("testing...");
+        // }
     }
 }
