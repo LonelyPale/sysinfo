@@ -138,7 +138,7 @@ pub struct Column {
     // pub render: Option<fn(args: RenderArgs) -> CombineString<'a>>, //使用别名类型Render可以不用定义生命周期<'a>
     // fn render(args: RenderArgs) -> CombineString {} //使用函数变量fn不能捕获外部变量，但闭包可以。
     // 函数变量是具体的类型，但闭包不是，每个闭包都是一个单独的类型，即时一模一样的两个闭包也是两个完全不同的类型，所以闭包只能用特征约束。
-    // 但此处如果使用闭包，会有泛型约束循环依赖的问题，Column依赖Render，Render依赖RenderArgs，RenderArgs依赖Column。
+    // 但此处如果使用闭包，会有泛型约束循环依赖和生命周期的问题，Column依赖Render，Render依赖RenderArgs，RenderArgs依赖Column。
 }
 
 //warning: bounds on generic parameters are not enforced in type aliases
@@ -233,6 +233,10 @@ impl Default for Column {
 
 impl fmt::Display for Column {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if self.title.len() == 0 {
+            return write!(f, "{}", self.format(AsStr(&self.title), None));
+        }
+
         let mut text = self.title.normal();
         text.fgcolor = self.color;
         text.style = Styles::Bold | Styles::Underline;
