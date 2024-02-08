@@ -84,8 +84,9 @@ fn main() {
             SysInfo::new().print_disk(all, sort, total);
         }
         None => {
-            SysInfo::new_all().print_all(args.no_color);
-        } // _ => {
+            SysInfo::new_all().print_all();
+        }
+        // _ => {
         //     println!("testing...");
         // }
     }

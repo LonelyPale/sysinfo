@@ -70,11 +70,11 @@ impl SysInfo {
     }
 
     /// 打印全部信息
-    pub fn print_all(&mut self, no_color: bool) {
-        self.print_system(no_color);
-        self.print_cpu(no_color);
+    pub fn print_all(&mut self) {
+        self.print_system(true);
+        self.print_cpu(true);
         self.print_memory();
-        self.print_disk(no_color, "".to_string(), true);
+        self.print_disk(true, "MountPoint".to_string(), true);
 
         // Components temperature:
         let components = Components::new_with_refreshed_list();
@@ -568,7 +568,7 @@ fn test_type() {
 
 #[test]
 fn test_print_all() {
-    SysInfo::new_all().print_all(false);
+    SysInfo::new_all().print_all();
 }
 
 #[test]
