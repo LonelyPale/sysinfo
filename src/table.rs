@@ -75,6 +75,7 @@ impl Table {
 
     fn fmt_row(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let column_last = self.columns.len() - 1;
+        let record_last = self.data.len() - 1;
         for (record_index, record) in self.data.iter().enumerate() {
             for (column_index, column) in self.columns.iter().enumerate() {
                 let mut text = "";
@@ -96,7 +97,7 @@ impl Table {
 
                 if column_index == 0 {
                     write!(f, "{}", column.format(AsStr(text), Some(args)))?;
-                } else if column_index == column_last {
+                } else if column_index == column_last && record_index != record_last {
                     write!(f, "  {}\n", column.format(AsStr(text), Some(args)))?;
                 } else {
                     write!(f, "  {}", column.format(AsStr(text), Some(args)))?;
