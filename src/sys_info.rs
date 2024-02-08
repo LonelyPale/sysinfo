@@ -66,15 +66,7 @@ impl SysInfo {
     }
 
     pub fn new_memory() -> Self {
-        Self::new_with_specifics(
-            RefreshKind::new().with_memory(MemoryRefreshKind::new().with_ram()),
-        )
-    }
-
-    pub fn new_swap() -> Self {
-        Self::new_with_specifics(
-            RefreshKind::new().with_memory(MemoryRefreshKind::new().with_swap()),
-        )
+        Self::new_with_specifics(RefreshKind::new().with_memory(MemoryRefreshKind::everything()))
     }
 
     /// 打印全部信息
@@ -119,12 +111,44 @@ impl SysInfo {
     }
 
     /// 打印CPU信息
-    pub fn print_cpu(&mut self, no_color: bool) {
+    pub fn print_cpu(&mut self, details: bool) {
+        let columns = vec![
+            Column {
+                title: "".to_string(),
+                key: "title".to_string(),
+                color: Some(Color::Red),
+                style: Style::default() | Styles::Bold,
+                ..Column::default()
+            },
+            Column {
+                title: "Use%".to_string(),
+                key: "cpu_usage".to_string(),
+                right_align: true,
+                color: Some(Color::Green),
+                ..Column::default()
+            },
+            Column {
+                title: "Core".to_string(),
+                key: "cpu_core".to_string(),
+                right_align: true,
+                color: Some(Color::Yellow),
+                ..Column::default()
+            },
+            Column {
+                title: "Thread".to_string(),
+                key: "cpu_thread".to_string(),
+                right_align: true,
+                color: Some(Color::Blue),
+                ..Column::default()
+            },
+        ];
+
         // Sleeping to let time for the system to run for long
         // enough to have useful information.
         std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
         self.system.refresh_cpu(); // Refreshing CPU information.
 
+        //全局 global
         let info = self.system.global_cpu_info();
         let core = self.system.physical_core_count();
         let cpus = self.system.cpus();
@@ -132,45 +156,75 @@ impl SysInfo {
         let cpu_core = format!("{}", core.unwrap_or_default());
         let cpu_thread = format!("{}", cpus.len());
 
-        if no_color {
-            println!(
-                "{} UsedPercent: {}, Core: {}, Thread: {}",
-                "Cpu", cpu_usage, cpu_core, cpu_thread
-            );
-        } else {
-            println!(
-                "{} UsedPercent: {}, Core: {}, Thread: {}",
-                "Cpu".red(),
-                cpu_usage.blue(),
-                cpu_core.cyan(),
-                cpu_thread.green()
-            );
-        }
+        let mut data = Vec::new();
+        data.push(HashMap::from([
+            ("title".to_string(), "CPU:".to_string()),
+            ("cpu_usage".to_string(), cpu_usage),
+            ("cpu_core".to_string(), cpu_core),
+            ("cpu_thread".to_string(), cpu_thread),
+        ]));
 
-        for cpu in cpus {
-            let cpu_usage = format!("{:.2}%", cpu.cpu_usage());
-            let frequency = format!("{}", cpu.frequency());
-            let name = cpu.name();
-            let vendor_id = cpu.vendor_id();
-            let brand = cpu.brand();
-            if no_color {
-                println!(
-                    "{} {} {} {} {}",
-                    name, cpu_usage, frequency, vendor_id, brand
-                );
-            } else {
-                println!(
-                    "{} {} {} {} {}",
-                    name.yellow(),
-                    cpu_usage.blue(),
-                    frequency.cyan(),
-                    vendor_id.green(),
-                    brand.purple()
-                );
+        let table = Table::new(columns, data, HashMap::new());
+        println!("{}", table);
+
+        if details {
+            //明细 details
+            let columns_details = vec![
+                Column {
+                    title: "Name".to_string(),
+                    key: "name".to_string(),
+                    color: Some(Color::Red),
+                    ..Column::default()
+                },
+                Column {
+                    title: "Use%".to_string(),
+                    key: "cpu_usage".to_string(),
+                    right_align: true,
+                    color: Some(Color::Green),
+                    ..Column::default()
+                },
+                Column {
+                    title: "Frequency".to_string(),
+                    key: "frequency".to_string(),
+                    right_align: true,
+                    color: Some(Color::Yellow),
+                    ..Column::default()
+                },
+                Column {
+                    title: "VendorID".to_string(),
+                    key: "vendor_id".to_string(),
+                    color: Some(Color::Blue),
+                    ..Column::default()
+                },
+                Column {
+                    title: "Brand".to_string(),
+                    key: "brand".to_string(),
+                    color: Some(Color::Magenta),
+                    ..Column::default()
+                },
+            ];
+
+            let mut data_details = Vec::new();
+            for cpu in cpus {
+                let name = cpu.name();
+                let cpu_usage = format!("{:.2}%", cpu.cpu_usage());
+                let frequency = format!("{}", cpu.frequency());
+                let vendor_id = cpu.vendor_id();
+                let brand = cpu.brand();
+
+                data_details.push(HashMap::from([
+                    ("name".to_string(), name.to_string()),
+                    ("cpu_usage".to_string(), cpu_usage),
+                    ("frequency".to_string(), frequency),
+                    ("vendor_id".to_string(), vendor_id.to_string()),
+                    ("brand".to_string(), brand.to_string()),
+                ]));
             }
-        }
 
-        println!()
+            let table_details = Table::new(columns_details, data_details, HashMap::new());
+            println!("{}", table_details);
+            println!();
+        }
     }
 
     /// 打印内存、交换分区信息
