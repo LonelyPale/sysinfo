@@ -1,13 +1,11 @@
-use std::fmt;
-use std::collections::HashMap;
-
+use crate::table::CombineString::{AsColoredString, AsStr, AsString};
 use colored::{Color, ColoredString, Colorize, Style, Styles};
+use std::collections::HashMap;
+use std::fmt;
 
-use crate::table::CombineString::{AsStr, AsString, AsColoredString};
-
-//标准版本(函数指针render)：已完成
-pub struct Table {
-    columns: Vec<Column>,
+//标准版本(闭包函数render)：未完成，有错误（这个问题，可能很难被解决，建议大家遇到后，还是老老实实用正常的函数，不要秀闭包了。）
+pub struct Table<'a> {
+    columns: Vec<Column<'a>>,
     columns_cache: HashMap<String, usize>,
     data: Vec<HashMap<String, String>>,
     custom: HashMap<String, String>,
@@ -25,8 +23,8 @@ pub struct Table {
     // #3: 使用Rc<RefCell<T>>智能指针来跳过编译阶段的所有权和生命周期检查(运行时检查)，但会有运行时性能损失和运行时Panic。
 }
 
-impl Table {
-    pub fn new(columns: Vec<Column>, data: Vec<HashMap<String, String>>, custom: HashMap<String, String>) -> Self {
+impl<'a> Table<'a> {
+    pub fn new(columns: Vec<Column<'a>>, data: Vec<HashMap<String, String>>, custom: HashMap<String, String>) -> Self {
         let mut table = Self {
             columns,
             data,
@@ -87,7 +85,7 @@ impl Table {
                     key: &column.key,
                     column_index,
                     column,
-                    columns: &self.columns,
+                    columns: &self.columns, //error: 闭包此处有生命周期问题，无法解决，编译器要求 &self的生命周期大于'a的。
                     record_index,
                     record,
                     data: &self.data,
@@ -107,7 +105,7 @@ impl Table {
     }
 }
 
-impl Default for Table {
+impl<'a> Default for Table<'a> {
     fn default() -> Self {
         Self {
             columns: Vec::new(),
@@ -118,7 +116,7 @@ impl Default for Table {
     }
 }
 
-impl fmt::Display for Table {
+impl<'a> fmt::Display for Table<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.fmt_header(f)?;
         self.fmt_row(f)?;
@@ -126,7 +124,7 @@ impl fmt::Display for Table {
     }
 }
 
-pub struct Column {
+pub struct Column<'a> {
     pub key: String,
     pub title: String,
     pub width: usize,
@@ -134,42 +132,50 @@ pub struct Column {
     pub right_align: bool,
     pub color: Option<Color>,
     pub style: Style,
-    pub render: Option<Render>,
+    pub render: Option<&'a dyn Render<'a>>,
     // pub render: Option<fn(args: RenderArgs) -> CombineString<'a>>, //使用别名类型Render可以不用定义生命周期<'a>
     // fn render(args: RenderArgs) -> CombineString {} //使用函数变量fn不能捕获外部变量，但闭包可以。
     // 函数变量是具体的类型，但闭包不是，每个闭包都是一个单独的类型，即时一模一样的两个闭包也是两个完全不同的类型，所以闭包只能用特征约束。
-    // 但此处如果使用闭包，会有泛型约束循环依赖和生命周期的问题，Column依赖Render，Render依赖RenderArgs，RenderArgs依赖Column。
+    // 但此处如果使用闭包，会有泛型约束循环依赖的问题，Column依赖Render，Render依赖RenderArgs，RenderArgs依赖Column。
 }
 
-//warning: bounds on generic parameters are not enforced in type aliases
-//type Render<S: AsRef<str>> = fn(args: RenderArgs<S>) -> CombineString<S>;
-type Render = fn(args: RenderArgs) -> CombineString;
+pub trait Render<'a> {
+    fn call(&self, args: RenderArgs<'a>) -> CombineString<'a>;
+}
+
+impl<'a, F> Render<'a> for F
+    where
+        F: Fn(RenderArgs<'a>) -> CombineString<'a>,
+{
+    fn call(&self, args: RenderArgs<'a>) -> CombineString<'a> {
+        (*self)(args)
+    }
+}
+
+type RenderFn = fn(args: RenderArgs) -> CombineString;
 
 pub struct RenderArgs<'a> {
     pub value: CombineString<'a>,
     pub key: &'a str,
     pub column_index: usize,
-    pub column: &'a Column,
-    pub columns: &'a Vec<Column>,
+    pub column: &'a Column<'a>,
+    pub columns: &'a Vec<Column<'a>>,
     pub record_index: usize,
     pub record: &'a HashMap<String, String>,
     pub data: &'a Vec<HashMap<String, String>>,
     pub custom: &'a HashMap<String, String>,
 }
 
-/// 使用泛型<S: AsRef<str>>，最终会导致泛型参数循环依赖，直到编译器报错 Column -> Render -> RenderArgs和CombineString -> Column
-#[derive(Debug)]
 pub enum CombineString<'a> {
     AsStr(&'a str),
     AsString(String),
     AsColoredString(ColoredString),
 }
 
-impl Column {
-    fn format(&self, value: CombineString, args: Option<RenderArgs>) -> String {
+impl<'a> Column<'a> {
+    fn format(&self, value: CombineString, args: Option<RenderArgs<'a>>) -> String {
         // fn format<S: AsRef<str>>(&self, value: S) -> String {}
         // let value: &str = value.as_ref();
-
         if self.hidden {
             String::new()
         } else {
@@ -177,7 +183,7 @@ impl Column {
                 None => value,
                 Some(render) => match args {
                     None => value,
-                    Some(args) => render(args),
+                    Some(args) => render.call(args),
                 },
             };
 
@@ -216,7 +222,7 @@ impl Column {
     }
 }
 
-impl Default for Column {
+impl<'a> Default for Column<'a> {
     fn default() -> Self {
         Self {
             key: "".to_string(),
@@ -231,7 +237,7 @@ impl Default for Column {
     }
 }
 
-impl fmt::Display for Column {
+impl<'a> fmt::Display for Column<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut text = self.title.normal();
         text.fgcolor = self.color;
@@ -270,22 +276,6 @@ fn test_hash_map() {
 }
 
 #[test]
-fn test_combine_string() {
-    let s = "111";
-    let s1 = AsStr(s);
-    let s2 = AsStr(&s);
-
-    let mut sm = "222";
-    let s3 = AsStr(sm);
-
-    sm = "333";
-    let s4 = AsStr(sm);
-    let s5 = AsStr(&sm);
-
-    println!("{:?} {:?} {:?} {:?} {:?}", s1, s2, s3, s4, s5);
-}
-
-#[test]
 fn test_column() {
     let column = Column {
         ..Column::default()
@@ -295,7 +285,7 @@ fn test_column() {
     let column_ref = &Column {
         ..Column::default()
     };
-    println!("{}", column_ref.format(AsStr("bbb"), None));
+    println!("{}", column_ref.format(AsString("bbb".to_string()), None));
 }
 
 #[test]
@@ -368,6 +358,32 @@ fn test4() {
     }
 
     println!("{:?}", shared_data.borrow());
+}
+
+#[derive(Debug)]
+struct Tab {
+    name: i32,
+}
+
+impl Tab {
+    fn new() -> Self {
+        let mut t = Self { name: 0 };
+        t.r();
+        t
+    }
+    fn r(&mut self) {
+        self.name = 111
+    }
+}
+
+#[test]
+fn test123() {
+    let mut t = Tab { name: 1 };
+    t.r();
+    println!("{:?}", t);
+
+    let t = Tab::new();
+    println!("{:?}", t);
 }
 
 #[test]
