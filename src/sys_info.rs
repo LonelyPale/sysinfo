@@ -72,8 +72,14 @@ impl SysInfo {
     /// 打印全部信息
     pub fn print_all(&mut self) {
         self.print_system();
+        println!();
+        println!();
         self.print_cpu(true);
+        println!();
+        println!();
         self.print_memory();
+        println!();
+        println!();
         self.print_disk(true, "MountPoint".to_string(), true);
 
         // Components temperature:
@@ -96,7 +102,6 @@ impl SysInfo {
         println!("{:width$} {}", "Kernel version:".color(Color::Red), kernel_version.color(Color::Yellow));
         println!("{:width$} {}", "OS version:".color(Color::Red), os_version.color(Color::Blue));
         println!("{:width$} {}", "Hostname:".color(Color::Red), host_name.color(Color::Magenta));
-        println!()
     }
 
     /// 打印CPU信息
@@ -211,6 +216,7 @@ impl SysInfo {
             }
 
             let table_details = Table::new(columns_details, data_details, HashMap::new());
+            println!();
             println!("{}", table_details);
         }
     }
