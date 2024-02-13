@@ -80,7 +80,7 @@ impl SysInfo {
         self.print_memory();
         println!();
         println!();
-        self.print_disk(true, "MountPoint".to_string(), true);
+        self.print_disk(true, "MountPoint".to_string(), "Type:overlay".to_string(), true);
 
         // Components temperature:
         // let components = sysinfo::Components::new_with_refreshed_list();
@@ -314,7 +314,7 @@ impl SysInfo {
         println!("{}", table);
     }
 
-    pub fn print_disk(&self, all: bool, sort: String, total: bool) {
+    pub fn print_disk(&self, all: bool, sort: String, exclude: String, total: bool) {
         // let render = |args: RenderArgs| -> CombineString {//closure-error: 无法解决
         fn render(args: RenderArgs) -> CombineString {
             let RenderArgs { value, column, record_index, data, custom, .. } = args;
@@ -428,6 +428,39 @@ impl SysInfo {
             },
         ];
 
+        // FIELD:VALUE1,VALUE2
+        let mut exclude_key: &str = "";
+        let mut exclude_vals: Vec<&str> = Vec::new();
+        if exclude.len() > 0 {
+            let parts: Vec<&str> = exclude.split(":").collect();
+            if parts.len() != 2 {
+                let err = format!("Invalid exclude: {}", exclude).red();
+                eprintln!("{}", err);
+                return;
+            }
+
+            let title = parts[0];
+            for col in &columns {
+                if title == col.title {
+                    exclude_key = &col.key;
+                    break;
+                }
+            }
+            if exclude_key.len() == 0 {
+                let err = format!("Invalid exclude: {}", exclude).red();
+                eprintln!("{}", err);
+                return;
+            }
+
+            let values = parts[1];
+            exclude_vals = values.split(",").collect();
+            if exclude_vals.len() == 0 {
+                let err = format!("Invalid exclude: {}", exclude).red();
+                eprintln!("{}", err);
+                return;
+            }
+        }
+
         let mut data = Vec::new();
         let disks = Disks::new_with_refreshed_list();
         let mut total_total = 0;
@@ -460,7 +493,7 @@ impl SysInfo {
             let usage_rate_num = used_size as f64 / disk.total_space() as f64 * 100.;
             let usage_rate = format!("{usage_rate_num:.2}%");
 
-            data.push(HashMap::from([
+            let row = HashMap::from([
                 ("name".to_string(), name),
                 ("file_system".to_string(), file_system),
                 ("kind".to_string(), kind),
@@ -475,14 +508,22 @@ impl SysInfo {
                 ("usage_rate".to_string(), usage_rate),
                 ("mount_point".to_string(), mount_point),
                 ("is_removable".to_string(), is_removable),
-            ]));
+            ]);
 
-            if total {
-                total_total += disk.total_space();
-                total_used += used_size;
-                total_free += free_size;
-                total_avail += disk.available_space();
-                total_usage += usage_rate_num;
+            let mut exclude_flag = false;
+            if exclude_key.len() > 0 && exclude_vals.len() > 0 {
+                exclude_flag = exclude_record_disk(exclude_key, &exclude_vals, &row);
+            }
+
+            if !exclude_flag {
+                data.push(row);
+                if total {
+                    total_total += disk.total_space();
+                    total_used += used_size;
+                    total_free += free_size;
+                    total_avail += disk.available_space();
+                    total_usage += usage_rate_num;
+                }
             }
         }
 
@@ -541,6 +582,20 @@ impl SysInfo {
         let table = Table::new(columns, data, custom);
         println!("{}", table);
     }
+}
+
+fn exclude_record_disk(exclude_key: &str, exclude_vals: &Vec<&str>, row: &HashMap<String, String>) -> bool {
+    let val_opt = row.get(exclude_key);
+    return if let Some(val) = val_opt {
+        for ev in exclude_vals {
+            if ev == val {
+                return true;
+            }
+        }
+        false
+    } else {
+        false
+    };
 }
 
 fn _type_of<T>(_: T) -> &'static str {

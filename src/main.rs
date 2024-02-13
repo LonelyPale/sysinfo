@@ -57,6 +57,10 @@ enum Commands {
         #[arg(short, long, value_name = "TITLE", default_value_t = String::from(""))]
         sort: String,
 
+        /// Limit listing to record not of field FIELD:VALUE1,VALUE2
+        #[arg(short, long, value_name = "FIELD:VALUE1,VALUE2", default_value_t = String::from(""))]
+        exclude: String,
+
         /// Generate total value
         #[arg(short, long)]
         total: bool,
@@ -80,8 +84,8 @@ fn main() {
         Some(Commands::Memory {}) => {
             SysInfo::new_memory().print_memory();
         }
-        Some(Commands::Disk { all, sort, total }) => {
-            SysInfo::new().print_disk(all, sort, total);
+        Some(Commands::Disk { all, sort, exclude, total }) => {
+            SysInfo::new().print_disk(all, sort, exclude, total);
         }
         None => {
             SysInfo::new_all().print_all();
