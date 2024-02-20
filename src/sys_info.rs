@@ -2,9 +2,10 @@ use colored::{Color, Colorize, Style, Styles};
 use std::collections::HashMap;
 use sysinfo::{CpuRefreshKind, Disks, MemoryRefreshKind, RefreshKind, System};
 
-use crate::common::PrettySize;
 use crate::disk::disk_info;
+use crate::common::{BaseSize, BlockSize, PrettySize};
 use crate::table::{Column, CombineString, RenderArgs, Table};
+use crate::Commands;
 
 #[derive(Debug)]
 pub struct SysInfo {
@@ -23,27 +24,6 @@ pub struct DiskInfo {
     pub available: String,
     pub usage_rate: String,
     pub is_removable: String,
-}
-
-#[derive(Debug)]
-pub struct DiskInfoStyle {
-    pub kind: InfoStyle,
-    pub name: InfoStyle,
-    pub file_system: InfoStyle,
-    pub mount_point: InfoStyle,
-    pub total: InfoStyle,
-    pub used: InfoStyle,
-    pub free: InfoStyle,
-    pub available: InfoStyle,
-    pub usage_rate: InfoStyle,
-    pub is_removable: InfoStyle,
-}
-
-#[derive(Debug)]
-pub struct InfoStyle {
-    pub name: String,
-    pub width: usize,
-    // pub display: bool,
 }
 
 impl SysInfo {
@@ -70,7 +50,7 @@ impl SysInfo {
     }
 
     /// 打印全部信息
-    pub fn print_all(&mut self) {
+    pub fn print_all(&mut self, cmd: Commands) {
         self.print_system();
         println!();
         println!();
@@ -80,7 +60,7 @@ impl SysInfo {
         self.print_memory();
         println!();
         println!();
-        self.print_disk(true, "MountPoint".to_string(), "Type:overlay".to_string(), true);
+        self.print_disk(cmd);//true, "MountPoint".to_string(), "Type:overlay".to_string(), true
 
         // Components temperature:
         // let components = sysinfo::Components::new_with_refreshed_list();
@@ -314,7 +294,30 @@ impl SysInfo {
         println!("{}", table);
     }
 
-    pub fn print_disk(&self, all: bool, sort: String, exclude: String, total: bool) {
+    pub fn print_disk(&self, cmd: Commands) {
+        let Commands::Disk { all, sort, exclude, total, human_readable, si, block_size, .. } = cmd else { todo!() };
+
+        let mut base: BaseSize = BaseSize::Size1024;
+        let mut block: BlockSize = BlockSize::Auto;
+        if human_readable {
+            base = BaseSize::Size1024;
+            block = BlockSize::Auto;
+        } else if si {
+            base = BaseSize::Size1000;
+            block = BlockSize::Auto;
+        }
+
+        if block_size.len() > 0 {
+            let result: Result<BlockSize, _> = block_size.parse();
+            block = match result {
+                Ok(val) => { val }
+                Err(err) => {
+                    eprintln!("{err}: {block_size}");
+                    return;
+                }
+            }
+        }
+
         // let render = |args: RenderArgs| -> CombineString {//closure-error: 无法解决
         fn render(args: RenderArgs) -> CombineString {
             let RenderArgs { value, column, record_index, data, custom, .. } = args;
@@ -473,8 +476,8 @@ impl SysInfo {
             let name: String = disk.name().to_str().unwrap_or_default().to_string();
             let file_system: String = disk.file_system().to_str().unwrap_or_default().to_string();
             let mount_point: String = disk.mount_point().to_str().unwrap_or_default().to_string();
-            let total_space: String = disk.total_space().pretty_size();
-            let available_space: String = disk.available_space().pretty_size();
+            let total_space: String = disk.total_space().pretty_size_with(base, block);
+            let available_space: String = disk.available_space().pretty_size_with(base, block);
             let is_removable: String = disk.is_removable().to_string();
 
             let mut free_size: u64 = 0;
@@ -485,10 +488,10 @@ impl SysInfo {
                     eprintln!("print_disk disk_info error: {}", err.red())
                 }
             }
-            let free_space: String = free_size.pretty_size();
+            let free_space: String = free_size.pretty_size_with(base, block);
 
             let used_size = disk.total_space() - free_size;
-            let used_space = used_size.pretty_size();
+            let used_space = used_size.pretty_size_with(base, block);
 
             let usage_rate_num = used_size as f64 / disk.total_space() as f64 * 100.;
             let usage_rate = format!("{usage_rate_num:.2}%");
@@ -498,13 +501,13 @@ impl SysInfo {
                 ("file_system".to_string(), file_system),
                 ("kind".to_string(), kind),
                 ("total_space".to_string(), total_space),
-                ("total".to_string(), disk.total_space().to_string()), //额外增加，排序用
+                ("total".to_string(), disk.total_space().to_string()), //额外增加，仅排序用
                 ("used_space".to_string(), used_space),
-                ("used".to_string(), used_size.to_string()), //额外增加，排序用
+                ("used".to_string(), used_size.to_string()), //额外增加，仅排序用
                 ("free_space".to_string(), free_space),
-                ("free".to_string(), free_size.to_string()), //额外增加，排序用
+                ("free".to_string(), free_size.to_string()), //额外增加，仅排序用
                 ("available_space".to_string(), available_space),
-                ("available".to_string(), disk.available_space().to_string()), //额外增加，排序用
+                ("available".to_string(), disk.available_space().to_string()), //额外增加，仅排序用
                 ("usage_rate".to_string(), usage_rate),
                 ("mount_point".to_string(), mount_point),
                 ("is_removable".to_string(), is_removable),
@@ -568,10 +571,10 @@ impl SysInfo {
             let total_usage_rate = format!("{total_usage:.2}%", );
             data.push(HashMap::from([
                 ("name".to_string(), "total".to_string()),
-                ("total_space".to_string(), total_total.pretty_size()),
-                ("used_space".to_string(), total_used.pretty_size()),
-                ("free_space".to_string(), total_free.pretty_size()),
-                ("available_space".to_string(), total_avail.pretty_size()),
+                ("total_space".to_string(), total_total.pretty_size_with(base, block)),
+                ("used_space".to_string(), total_used.pretty_size_with(base, block)),
+                ("free_space".to_string(), total_free.pretty_size_with(base, block)),
+                ("available_space".to_string(), total_avail.pretty_size_with(base, block)),
                 ("usage_rate".to_string(), total_usage_rate),
             ]));
         }
@@ -616,7 +619,7 @@ fn test_type() {
 
 #[test]
 fn test_print_all() {
-    SysInfo::new_all().print_all();
+    SysInfo::new_all().print_all(Commands::System {});
 }
 
 #[test]
@@ -636,7 +639,16 @@ fn test_print_memory() {
 
 #[test]
 fn test_print_disk() {
-    SysInfo::new().print_disk(false, "".to_string(), false);
+    let cmd = Commands::Disk {
+        all: true,
+        sort: "MountPoint".to_string(),
+        exclude: "Type:overlay".to_string(),
+        total: true,
+        human_readable: false,
+        si: false,
+        block_size: "".to_string(),
+    };
+    SysInfo::new().print_disk(cmd);
 }
 
 fn _demo_color() {
