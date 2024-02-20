@@ -50,17 +50,29 @@ impl SysInfo {
     }
 
     /// 打印全部信息
-    pub fn print_all(&mut self, cmd: Commands) {
+    pub fn print_all(&mut self) {
         self.print_system();
         println!();
         println!();
+
         self.print_cpu(true);
         println!();
         println!();
+
         self.print_memory();
         println!();
         println!();
-        self.print_disk(cmd);//true, "MountPoint".to_string(), "Type:overlay".to_string(), true
+
+        let cmd = Commands::Disk {
+            all: true,
+            sort: "".to_string(), //"MountPoint".to_string()
+            exclude: "".to_string(), //"Type:overlay".to_string()
+            total: true,
+            human_readable: false,
+            si: false,
+            block_size: "".to_string(),
+        };
+        self.print_disk(cmd);
 
         // Components temperature:
         // let components = sysinfo::Components::new_with_refreshed_list();
@@ -619,7 +631,7 @@ fn test_type() {
 
 #[test]
 fn test_print_all() {
-    SysInfo::new_all().print_all(Commands::System {});
+    SysInfo::new_all().print_all();
 }
 
 #[test]

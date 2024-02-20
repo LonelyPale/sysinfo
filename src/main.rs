@@ -111,7 +111,7 @@ fn main() {
             SysInfo::new().print_disk(args.command.unwrap());
         }
         None => {
-            SysInfo::new_all().print_all(args.command.unwrap());
+            SysInfo::new_all().print_all();
         }
         // _ => {
         //     println!("testing...");
