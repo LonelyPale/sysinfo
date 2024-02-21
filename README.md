@@ -36,5 +36,6 @@ cargo remove psutil
 
 ```shell
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/LonelyPale/sysinfo-cli/main/bin/install.py | sh
 
 ```

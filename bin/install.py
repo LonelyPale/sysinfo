@@ -1,10 +1,10 @@
 #!/usr/bin/python3
 
+import os, sys
+
 if __name__ != "__main__":
     sys.stderr.write('The executable install module must not be imported.')
     sys.exit(1)
-
-import os, sys
 
 SCRIPT_FILE = os.path.abspath(__file__)
 BASE_DIR = os.path.dirname(SCRIPT_FILE)
