@@ -16,11 +16,12 @@ libc = "0.2.152"
 sysinfo = "0.30.5"
 
 [profile.release]
-#opt-level = "z"
-opt-level = "s"
-lto = true
-strip = true
-codegen-units = 1
+#opt-level = "z"    # Optimize for size.
+opt-level = "s"     #
+lto = true          # Enable Link Time Optimization
+strip = true        # Automatically strip symbols from the binary.
+codegen-units = 1   # Reduce number of codegen units to increase optimizations.
+#panic = "abort"    # Abort on panic
 
 #在 Rust 中，`opt-level` 参数控制着编译器的优化级别。`opt-level` 参数有多个选项，其中包括 `"z"` 和 `"s"`。它们分别表示不同的优化级别，影响编译后的二进制文件的大小和性能。
 #
