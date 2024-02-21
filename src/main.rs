@@ -10,13 +10,16 @@ use sys_info::SysInfo;
 
 #[derive(Debug, Parser)] // requires `derive` feature
 #[command(name = "sysinfo", bin_name = "sysinfo")]
-#[command(version = "0.1.0", long_version = "0.1.0.888")]
+#[command(version = "0.1.0", long_version = "0.1.0.2024-02-21")]
 #[command(about = "Display system information CLI", long_about = None)]
+#[command(after_help = "Additional help information can be found here. (https://github.com/LonelyPale/sysinfo-cli)", after_long_help = None)] //自定义help后输出的内容，使用属性宏clap和command都可以
 #[command(disable_version_flag = true)] //禁用version
 #[command(disable_help_flag = true)] //禁用help
-// #[command(next_line_help = true)] //一条记录分两行显示
+// #[command(color = ColorChoice::Always)] //启用颜色输出，没有效果
+// #[command(author = "Your Name. <email@example.com>")] //作者信息
+// #[command(next_line_help = true)] //一条记录分两行显示，参数在第一行，帮助在第二行
 // #[command(ignore_errors = true)] //忽略error
-/// 111
+// #[clap(after_help = "Additional help information can be found here.")] //自定义help后输出的内容，使用属性宏clap和command都可以
 struct Cli {
     #[command(subcommand)]
     command: Option<Commands>, //Option使子命令不是必须的
@@ -38,7 +41,6 @@ struct Cli {
 }
 
 #[derive(Debug, Subcommand)]
-/// 222
 pub enum Commands {
     /// Print system info
     System {},
@@ -54,17 +56,25 @@ pub enum Commands {
     Memory {},
 
     /// Print disk info
+    #[command(after_help = "FIELD is a column to be included.  Valid field names are:
+[Device | Type | Kind | Total | Used | Free | Avail | Use% | MountPoint | Removable] (see info page).
+
+The SIZE argument is an integer and optional unit (example: 10K is 10*1024).
+Units are K,M,G,T,P,E,Z,Y (powers of 1024) or KB,MB,... (powers of 1000).
+
+Additional help information can be found here. (https://github.com/LonelyPale/sysinfo-cli)
+")] //自定义help后输出的内容，使用属性宏clap和command都可以
     Disk {
         /// Print all fields
         #[arg(short, long)]
         all: bool,
 
-        /// Print by sort
-        /// [Device | Type | Kind | Total | Used | Free | Avail | Use% | MountPoint | Removable]
-        #[arg(short, long, value_name = "TITLE", default_value_t = String::from(""))]
+        /// Sort by field; see FIELD format below
+        ///
+        #[arg(short, long, value_name = "FIELD", default_value_t = String::from(""))]
         sort: String,
 
-        /// Limit listing to record not of field FIELD:VALUE1,VALUE2
+        /// Limit listing to record not of field and value; see FIELD format below
         #[arg(short, long, value_name = "FIELD:VALUE1,VALUE2", default_value_t = String::from(""))]
         exclude: String,
 
@@ -86,8 +96,6 @@ pub enum Commands {
         #[arg(short = 'B', long, value_name = "SIZE", default_value_t = String::from(""))]
         block_size: String,
     },
-
-    // 333
 }
 
 fn main() {
