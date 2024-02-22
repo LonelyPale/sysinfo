@@ -17,7 +17,7 @@ sysinfo = "0.30.5"
 
 [profile.release]
 #opt-level = "z"    # Optimize for size.
-opt-level = "s"     #
+opt-level = "s"     # 默认的优化级别
 lto = true          # Enable Link Time Optimization
 strip = true        # Automatically strip symbols from the binary.
 codegen-units = 1   # Reduce number of codegen units to increase optimizations.
@@ -30,3 +30,9 @@ codegen-units = 1   # Reduce number of codegen units to increase optimizations.
 #2. **`opt-level = "s"`**: 这是 Rust 中的默认优化级别。它会启用一些优化，包括删除未使用的代码、内联函数等，以提高程序的性能。与 `"z"` 相比，它会对生成的二进制文件进行更多的优化，但可能会导致二进制文件变大一些。
 #
 #总的来说，`opt-level = "z"` 会对二进制文件进行较少的优化，主要关注减小文件大小，而 `opt-level = "s"` 则会进行更多的优化以提高性能，但可能会导致生成的二进制文件稍大一些。你可以根据项目的需求和目标选择合适的优化级别。
+
+[target.x86_64-unknown-linux-gnu]
+linker = "x86_64-unknown-linux-gnu-gcc"
+
+[target.x86_64-unknown-linux-musl]
+linker = "x86_64-linux-musl-gcc"
