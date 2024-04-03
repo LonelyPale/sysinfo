@@ -1,10 +1,13 @@
 #!/usr/bin/python3
 
-import os, sys, platform
+import os
+import sys
+import platform
 
 if __name__ != "__main__":
     sys.stderr.write('The executable install module must not be imported.')
     sys.exit(1)
+
 
 class SysInfo:
     def __init__(self):
@@ -20,20 +23,28 @@ class SysInfo:
                 f'shell: {self.shell}\n'
                 f'home: {self.home}\n')
 
-def run(*args, exit_code=True, multi_command=False, **kwargs):
-    print(isinstance(args[0], str))
-    print(isinstance(args[0], tuple))
-    print(isinstance(args[0], tuple))
 
-    if multi_command and (isinstance(args[0], tuple) or isinstance(args[0], list)):
+def run(*args, exit_code=True, multi_command=False, **kwargs):
+    if isinstance(args[0], tuple) or isinstance(args[0], list):
+        print('is tuple | list')
+    elif isinstance(args[0], str):
+        print('is str')
+    else:
+        print('Unsupported parameter type')
+
+    if multi_command:
         rets = []
-#         for arg in args[0]:
-#             rets.append(command(arg, exit_code, **kwargs))
+        # for arg in args[0]:
+        #     rets.append(command(arg, exit_code, **kwargs))
         return rets
     else:
-        pass
-#         return command(*args, exit_code, **kwargs)
+        import subprocess
+        ret = subprocess.run('ls', executable="/bin/bash", **kwargs)
+        # return command(*args, exit_code, **kwargs)
+
 
 sys_info = SysInfo()
 print(sys_info)
 run('', 123)
+run((), 123)
+run([], 123)

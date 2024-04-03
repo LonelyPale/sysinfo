@@ -10,7 +10,7 @@ use sys_info::SysInfo;
 
 #[derive(Debug, Parser)] // requires `derive` feature
 #[command(name = "sysinfo", bin_name = "sysinfo")]
-#[command(version = "0.1.0", long_version = "0.1.0.2024-02-22")]
+#[command(version = "0.1.0", long_version = "0.1.0 (2024-02-22)")]
 #[command(about = "Display system information CLI", long_about = None)]
 #[command(after_help = "Additional help information can be found here. (https://github.com/LonelyPale/sysinfo-cli)", after_long_help = None)] //自定义help后输出的内容，使用属性宏clap和command都可以
 #[command(disable_version_flag = true)] //禁用version
@@ -35,6 +35,8 @@ struct Cli {
 
     //short = 'h',
     //[custom_help_flag](https://github.com/clap-rs/clap/blob/v4.4.18/tests/derive/help.rs#L430)
+    //[before_help、before_long_help](https://github.com/clap-rs/clap/blob/v4.4.18/tests/builder/help.rs#L235)
+    //[after_help、after_long_help](https://github.com/clap-rs/clap/blob/v4.4.18/tests/builder/help.rs#L259)
     /// Print help
     #[arg(long = "help", action = ArgAction::Help, value_parser = clap::value_parser ! (bool))]
     help: (),
