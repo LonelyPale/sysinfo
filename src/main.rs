@@ -10,7 +10,7 @@ use sys_info::SysInfo;
 
 #[derive(Debug, Parser)] // requires `derive` feature
 #[command(name = "sysinfo", bin_name = "sysinfo")]
-#[command(version = "0.1.0", long_version = "0.1.0 (2024-02-22)")]
+#[command(version = "0.1.1", long_version = "0.1.1 (2024-04-11)")]
 #[command(about = "Display system information CLI", long_about = None)]
 #[command(after_help = "Additional help information can be found here. (https://github.com/LonelyPale/sysinfo-cli)", after_long_help = None)] //自定义help后输出的内容，使用属性宏clap和command都可以
 #[command(disable_version_flag = true)] //禁用version
@@ -61,11 +61,12 @@ pub enum Commands {
     #[command(after_help = "FIELD is a column to be included.  Valid field names are:
 [Device | Type | Kind | Total | Used | Free | Avail | Use% | MountPoint | Removable] (see info page).
 
-The SIZE argument is an integer and optional unit (example: 10K is 10*1024).
-Units are K,M,G,T,P,E,Z,Y (powers of 1024) or KB,MB,... (powers of 1000).
+The SIZE argument is an integer and optional unit (example: 10K is 10*1024 or 10K is 10*1000).
+Units are B,K,M,G,T,P,E,Z,Y (powers of 1024 [-h | --human_readable] or 1000 [-H | --si]).
 
 Additional help information can be found here. (https://github.com/LonelyPale/sysinfo-cli)
 ")] //自定义help后输出的内容，使用属性宏clap和command都可以
+    //Units are K,M,G,T,P,E,Z,Y (powers of 1024) or KB,MB,... (powers of 1000).
     Disk {
         /// Print all fields
         #[arg(short, long)]

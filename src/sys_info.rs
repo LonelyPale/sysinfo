@@ -482,7 +482,6 @@ impl SysInfo {
         let mut total_used = 0;
         let mut total_free = 0;
         let mut total_avail = 0;
-        let mut total_usage = 0.;
         for disk in &disks {
             let kind: String = disk.kind().to_string();
             let name: String = disk.name().to_str().unwrap_or_default().to_string();
@@ -537,7 +536,6 @@ impl SysInfo {
                     total_used += used_size;
                     total_free += free_size;
                     total_avail += disk.available_space();
-                    total_usage += usage_rate_num;
                 }
             }
         }
@@ -579,8 +577,8 @@ impl SysInfo {
         }
 
         if total {
-            total_usage = total_usage / disks.len() as f64;
-            let total_usage_rate = format!("{total_usage:.2}%", );
+            let total_usage = total_used as f64 / total_total as f64 * 100.;
+            let total_usage_rate = format!("{total_usage:.2}%");
             data.push(HashMap::from([
                 ("name".to_string(), "total".to_string()),
                 ("total_space".to_string(), total_total.pretty_size_with(base, block)),
