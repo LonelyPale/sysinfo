@@ -64,8 +64,8 @@ shasum -a 256 sysinfo*
 
 # Package 打包
 ```shell
-zip -9 -rj package/sysinfo-0.1.0-darwin-x86_64.zip target/darwin/release/sysinfo
-zip -9 -rj package/sysinfo-0.1.0-linux-x86_64.zip target/linux/release/sysinfo
+zip -9 -rj package/sysinfo-0.1.1-darwin-x86_64.zip target/darwin/release/sysinfo
+zip -9 -rj package/sysinfo-0.1.1-linux-x86_64.zip target/linux/release/sysinfo
 
 git tag 0.1.1
 git push origin 0.1.1
